@@ -478,19 +478,12 @@ body::before {
   border-radius: var(--radius);
   padding: 12px;
   box-shadow: var(--shadow-lg);
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transform: translateY(-8px);
-  transition: all var(--transition-fast);
+  display: none;
   min-width: 260px;
 }
 
 .date-picker--open {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  transform: translateY(0);
+  display: block;
 }
 
 .date-picker__header {

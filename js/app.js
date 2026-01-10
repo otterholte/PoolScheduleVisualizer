@@ -477,8 +477,9 @@ class PoolScheduleApp {
       e.stopPropagation();
       e.preventDefault();
       this.selectDate(dateStr);
-      // Force close with timeout to ensure state updates
-      setTimeout(() => this.closeDatePicker(), 0);
+      // Directly remove the open class
+      this.elements.datePicker.classList.remove('date-picker--open');
+      this.datePickerOpen = false;
     });
     
     return btn;
