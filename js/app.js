@@ -471,7 +471,8 @@ class PoolScheduleApp {
     if (dateStr === todayStr) btn.classList.add('date-picker__day--today');
     if (dateStr === this.selectedDate) btn.classList.add('date-picker__day--selected');
     
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
       this.selectDate(dateStr);
       this.closeDatePicker();
     });
