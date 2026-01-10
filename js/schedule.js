@@ -175,29 +175,40 @@ class ScheduleManager {
   }
 
   /**
+   * Get pool hours for a specific date
+   * @param {string} dateStr - Date in YYYY-MM-DD format
+   * @returns {object} { open: minutes, close: minutes } or null if not found
+   */
+  getPoolHours(dateStr) {
+    const date = new Date(dateStr + 'T12:00:00');
+    const dayOfWeek = date.getDay();
+    
+    let hours;
+    if (dayOfWeek === 0) {
+      hours = this.data?.facilityInfo?.hours?.sunday;
+    } else if (dayOfWeek === 6) {
+      hours = this.data?.facilityInfo?.hours?.saturday;
+    } else {
+      hours = this.data?.facilityInfo?.hours?.weekday;
+    }
+    
+    if (!hours) return null;
+    
+    return {
+      open: this.timeToMinutes(hours.open),
+      close: this.timeToMinutes(hours.close)
+    };
+  }
+
+  /**
    * Check if pool is open at a given time
    * @param {string} dateStr - Date in YYYY-MM-DD format
    * @param {number} timeMinutes - Time in minutes from midnight
    */
   isPoolOpen(dateStr, timeMinutes) {
-    const date = new Date(dateStr);
-    const dayOfWeek = date.getDay();
-    
-    let hours;
-    if (dayOfWeek === 0) {
-      hours = this.data?.poolInfo?.hours?.sunday;
-    } else if (dayOfWeek === 6) {
-      hours = this.data?.poolInfo?.hours?.saturday;
-    } else {
-      hours = this.data?.poolInfo?.hours?.weekday;
-    }
-    
+    const hours = this.getPoolHours(dateStr);
     if (!hours) return false;
-    
-    const openMinutes = this.timeToMinutes(hours.open);
-    const closeMinutes = this.timeToMinutes(hours.close);
-    
-    return timeMinutes >= openMinutes && timeMinutes < closeMinutes;
+    return timeMinutes >= hours.open && timeMinutes < hours.close;
   }
 
   /**

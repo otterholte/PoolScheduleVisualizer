@@ -42,6 +42,7 @@ class PoolScheduleApp {
       this.renderDaySelector();
       this.renderLegend();
       this.setupEventListeners();
+      this.updateSliderRange();
       this.updateTimeSlider();
       this.updateDisplay();
       
@@ -273,10 +274,20 @@ class PoolScheduleApp {
     // Now button
     this.elements.btnNow.addEventListener('click', () => {
       this.selectedDate = this.formatDate(new Date());
-      this.selectedTimeMinutes = this.getCurrentTimeMinutes();
+      this.highlightActiveDay();
+      this.updateSliderRange();
+      
+      // Clamp current time to pool hours
+      const hours = this.schedule.getPoolHours(this.selectedDate);
+      let currentTime = this.getCurrentTimeMinutes();
+      if (hours) {
+        if (currentTime < hours.open) currentTime = hours.open;
+        if (currentTime > hours.close) currentTime = hours.close;
+      }
+      this.selectedTimeMinutes = currentTime;
+      
       this.updateTimeSlider();
       this.updateDisplay();
-      this.highlightActiveDay();
     });
     
     // Modal close
@@ -306,7 +317,56 @@ class PoolScheduleApp {
   selectDate(dateStr) {
     this.selectedDate = dateStr;
     this.highlightActiveDay();
+    this.updateSliderRange();
     this.updateDisplay();
+  }
+
+  updateSliderRange() {
+    const hours = this.schedule.getPoolHours(this.selectedDate);
+    if (!hours) return;
+    
+    const slider = this.elements.timeSlider;
+    slider.min = hours.open;
+    slider.max = hours.close;
+    
+    // Clamp current time to valid range
+    if (this.selectedTimeMinutes < hours.open) {
+      this.selectedTimeMinutes = hours.open;
+    } else if (this.selectedTimeMinutes > hours.close) {
+      this.selectedTimeMinutes = hours.close;
+    }
+    
+    // Update hour marks
+    this.updateHourMarks(hours.open, hours.close);
+  }
+
+  updateHourMarks(openMinutes, closeMinutes) {
+    const marksContainer = document.querySelector('.time-slider-marks');
+    if (!marksContainer) return;
+    
+    marksContainer.innerHTML = '';
+    
+    const totalRange = closeMinutes - openMinutes;
+    
+    // Generate marks at each hour
+    const startHour = Math.ceil(openMinutes / 60);
+    const endHour = Math.floor(closeMinutes / 60);
+    
+    for (let hour = startHour; hour <= endHour; hour++) {
+      const minutes = hour * 60;
+      const position = ((minutes - openMinutes) / totalRange) * 100;
+      
+      // Format hour label
+      const period = hour >= 12 ? 'PM' : 'AM';
+      const displayHour = hour % 12 || 12;
+      const label = `${displayHour}${period}`;
+      
+      const mark = document.createElement('span');
+      mark.className = 'time-mark';
+      mark.style.left = `${position}%`;
+      mark.textContent = label;
+      marksContainer.appendChild(mark);
+    }
   }
 
   highlightActiveDay() {

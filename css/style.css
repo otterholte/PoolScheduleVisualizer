@@ -416,6 +416,7 @@ body::before {
 .time-slider-container {
   flex: 1;
   position: relative;
+  padding-bottom: 24px;
 }
 
 .time-slider {
@@ -453,24 +454,27 @@ body::before {
 }
 
 .time-slider-marks {
-  position: relative;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   height: 20px;
-  margin-top: 8px;
 }
 
 .time-mark {
   position: absolute;
   transform: translateX(-50%);
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   color: var(--text-muted);
   font-weight: 500;
   white-space: nowrap;
+  top: 8px;
 }
 
 .time-mark::before {
   content: '';
   position: absolute;
-  top: -10px;
+  top: -8px;
   left: 50%;
   transform: translateX(-50%);
   width: 1px;
