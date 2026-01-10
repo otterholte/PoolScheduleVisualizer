@@ -44,8 +44,10 @@
     <!-- Day Selector -->
     <nav class="day-selector" id="daySelector"></nav>
 
-    <!-- Floorplan Section -->
-    <section class="floorplan-section">
+    <!-- Main Content: Floorplan + Legend Sidebar -->
+    <div class="main-content">
+      <!-- Floorplan Section -->
+      <section class="floorplan-section">
       <div class="floorplan-header">
         <h2 class="floorplan-header__title" id="floorplanTitle">Facility Floorplan</h2>
         <span class="floorplan-header__time" id="timeDisplay">10:00 AM</span>
@@ -302,17 +304,16 @@
       </div>
     </section>
 
-    <!-- Legend -->
-    <section class="legend-panel">
-      <div class="legend-panel__header">
-        <h3 class="legend-panel__title">ACTIVITY LEGEND</h3>
-        <div class="legend-panel__filter-info">
-          <span class="legend-panel__filter-value" id="filterValue"></span>
-          <button class="legend-panel__clear-btn legend-panel__clear-btn--hidden" id="clearFilterBtn">Clear Filter</button>
+      <!-- Legend Sidebar -->
+      <aside class="legend-sidebar">
+        <div class="legend-sidebar__header">
+          <h3 class="legend-sidebar__title">ACTIVITY LEGEND</h3>
+          <button class="legend-sidebar__clear-btn legend-sidebar__clear-btn--hidden" id="clearFilterBtn">Clear</button>
         </div>
-      </div>
-      <div class="legend-grid" id="legendGrid"></div>
-    </section>
+        <div class="legend-sidebar__filter-info" id="filterValue"></div>
+        <div class="legend-grid" id="legendGrid"></div>
+      </aside>
+    </div>
   </main>
 
   <!-- Modal for Lane Details -->

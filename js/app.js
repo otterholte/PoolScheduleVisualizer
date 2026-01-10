@@ -232,14 +232,14 @@ class PoolScheduleApp {
     if (this.activeFilters.length > 0) {
       const names = this.activeFilters.map(f => f.name);
       if (names.length <= 2) {
-        filterValue.textContent = 'Showing: ' + names.join(', ');
+        filterValue.textContent = names.join(', ');
       } else {
-        filterValue.textContent = `Showing: ${names.length} selections`;
+        filterValue.textContent = `${names.length} selected`;
       }
-      this.elements.clearFilterBtn.classList.remove('legend-panel__clear-btn--hidden');
+      this.elements.clearFilterBtn.classList.remove('legend-sidebar__clear-btn--hidden');
     } else {
       filterValue.textContent = '';
-      this.elements.clearFilterBtn.classList.add('legend-panel__clear-btn--hidden');
+      this.elements.clearFilterBtn.classList.add('legend-sidebar__clear-btn--hidden');
     }
   }
 
