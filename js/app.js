@@ -399,15 +399,21 @@ class PoolScheduleApp {
     }
     
     const activity = status.activity;
-    laneEl.setAttribute('fill', activity.color);
     
     // Apply filter highlight
     if (this.activeFilter) {
       if (this.isActivityMatchingFilter(activity.id)) {
-        laneEl.style.filter = 'brightness(1.3) drop-shadow(0 0 10px ' + activity.color + ')';
+        // Matching activity - show full color with glow
+        laneEl.setAttribute('fill', activity.color);
+        laneEl.style.filter = 'brightness(1.2) drop-shadow(0 0 8px ' + activity.color + ')';
       } else {
-        laneEl.style.opacity = '0.3';
+        // Non-matching activity - gray out completely
+        laneEl.setAttribute('fill', '#4b5563');
+        laneEl.style.opacity = '0.4';
       }
+    } else {
+      // No filter active - show normal activity color
+      laneEl.setAttribute('fill', activity.color);
     }
   }
 
