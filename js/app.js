@@ -21,12 +21,11 @@ class PoolScheduleApp {
       floorplanTitle: document.getElementById('floorplanTitle'),
       statusBadge: document.getElementById('statusBadge'),
       timeDisplay: document.getElementById('timeDisplay'),
+      timeFloatingLabel: document.getElementById('timeFloatingLabel'),
       timeSlider: document.getElementById('timeSlider'),
       btnNow: document.getElementById('btnNow'),
       floorplan: document.getElementById('floorplan'),
       legendGrid: document.getElementById('legendGrid'),
-      filterLabel: document.getElementById('filterLabel'),
-      filterValue: document.getElementById('filterValue'),
       clearFilterBtn: document.getElementById('clearFilterBtn'),
       modalOverlay: document.getElementById('modalOverlay'),
       modalTitle: document.getElementById('modalTitle'),
@@ -230,18 +229,17 @@ class PoolScheduleApp {
   }
 
   updateFilterUI() {
+    const filterValue = document.getElementById('filterValue');
     if (this.activeFilters.length > 0) {
-      this.elements.filterLabel.textContent = 'Showing:';
       const names = this.activeFilters.map(f => f.name);
       if (names.length <= 2) {
-        this.elements.filterValue.textContent = names.join(', ');
+        filterValue.textContent = 'Showing: ' + names.join(', ');
       } else {
-        this.elements.filterValue.textContent = `${names.length} selections`;
+        filterValue.textContent = `Showing: ${names.length} selections`;
       }
       this.elements.clearFilterBtn.classList.remove('legend-panel__clear-btn--hidden');
     } else {
-      this.elements.filterLabel.textContent = '';
-      this.elements.filterValue.textContent = '';
+      filterValue.textContent = '';
       this.elements.clearFilterBtn.classList.add('legend-panel__clear-btn--hidden');
     }
   }
@@ -296,7 +294,13 @@ class PoolScheduleApp {
     // Time slider
     this.elements.timeSlider.addEventListener('input', (e) => {
       this.selectedTimeMinutes = parseInt(e.target.value, 10);
+      this.updateFloatingLabelPosition();
       this.updateDisplay();
+    });
+    
+    // Update floating label on window resize
+    window.addEventListener('resize', () => {
+      this.updateFloatingLabelPosition();
     });
     
     // Now button
@@ -425,6 +429,25 @@ class PoolScheduleApp {
 
   updateTimeSlider() {
     this.elements.timeSlider.value = this.selectedTimeMinutes;
+    this.updateFloatingLabelPosition();
+  }
+
+  updateFloatingLabelPosition() {
+    const slider = this.elements.timeSlider;
+    const label = this.elements.timeFloatingLabel;
+    if (!slider || !label) return;
+    
+    const min = parseInt(slider.min);
+    const max = parseInt(slider.max);
+    const value = parseInt(slider.value);
+    const percentage = (value - min) / (max - min);
+    
+    // Account for thumb width (roughly 20px)
+    const sliderWidth = slider.offsetWidth;
+    const thumbOffset = 10; // half of thumb width
+    const position = percentage * (sliderWidth - thumbOffset * 2) + thumbOffset;
+    
+    label.style.left = `${position}px`;
   }
 
   updateDisplay() {

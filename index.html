@@ -55,14 +55,11 @@
 
       <!-- Time Navigation -->
       <div class="time-nav">
-        <div class="time-nav__header">
-          <div class="time-nav__info">
-            <span class="time-nav__label">Viewing schedule at:</span>
-            <span class="time-nav__display" id="timeDisplay">Now</span>
-          </div>
-          <button class="btn btn--primary btn--sm" id="btnNow">Now</button>
-        </div>
+        <button class="btn btn--primary btn--sm time-nav__now-btn" id="btnNow">Now</button>
         <div class="time-slider-container">
+          <div class="time-nav__floating-label" id="timeFloatingLabel">
+            <span class="time-nav__display" id="timeDisplay">10:00 AM</span>
+          </div>
           <input type="range" class="time-slider" id="timeSlider" min="360" max="1080" step="15" value="600">
           <div class="time-slider-marks"></div>
         </div>
@@ -315,7 +312,6 @@
       <div class="legend-panel__header">
         <h3 class="legend-panel__title">ACTIVITY LEGEND</h3>
         <div class="legend-panel__filter-info">
-          <span class="legend-panel__filter-label" id="filterLabel"></span>
           <span class="legend-panel__filter-value" id="filterValue"></span>
           <button class="legend-panel__clear-btn legend-panel__clear-btn--hidden" id="clearFilterBtn">Clear Filter</button>
         </div>
