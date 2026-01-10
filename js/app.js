@@ -21,6 +21,7 @@ class PoolScheduleApp {
       timeDisplay: document.getElementById('timeDisplay'),
       timeSlider: document.getElementById('timeSlider'),
       btnNow: document.getElementById('btnNow'),
+      liveIndicator: document.getElementById('liveIndicator'),
       floorplan: document.getElementById('floorplan'),
       legendGrid: document.getElementById('legendGrid'),
       legendSidebar: document.querySelector('.legend-sidebar'),
@@ -525,9 +526,16 @@ class PoolScheduleApp {
   updateDisplay() {
     // Update time display
     const timeStr = this.schedule.minutesToTimeString(this.selectedTimeMinutes);
-    const isNow = this.selectedTimeMinutes === this.getCurrentTimeMinutes() && 
-                  this.selectedDate === this.formatDate(new Date());
-    this.elements.timeDisplay.textContent = isNow ? 'Now' : timeStr;
+    const isLive = this.selectedTimeMinutes === this.getCurrentTimeMinutes() && 
+                   this.selectedDate === this.formatDate(new Date());
+    this.elements.timeDisplay.textContent = timeStr;
+    
+    // Update live indicator
+    if (isLive) {
+      this.elements.liveIndicator.classList.add('time-now-btn__live--active');
+    } else {
+      this.elements.liveIndicator.classList.remove('time-now-btn__live--active');
+    }
     
     // Update title
     const date = new Date(this.selectedDate + 'T12:00:00');

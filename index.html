@@ -46,8 +46,18 @@
       <!-- Floorplan Section -->
 <section class="floorplan-section">
         <div class="floorplan-header">
-          <!-- Left: Time Display -->
-          <span class="floorplan-header__time" id="timeDisplay">10:00 AM</span>
+          <!-- Left: Time Display (clickable to jump to now) -->
+          <button class="time-now-btn" id="btnNow" title="Click for current time">
+            <span class="time-now-btn__time" id="timeDisplay">10:00 AM</span>
+            <svg class="time-now-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </svg>
+            <span class="time-now-btn__live" id="liveIndicator">
+              <span class="time-now-btn__live-dot"></span>
+              LIVE
+            </span>
+          </button>
           
           <!-- Center: Date Navigation -->
           <div class="floorplan-header__center">
@@ -109,7 +119,6 @@
 
       <!-- Time Navigation -->
       <div class="time-nav">
-        <button class="btn btn--primary btn--sm" id="btnNow">Now</button>
         <div class="time-slider-container">
           <input type="range" class="time-slider" id="timeSlider" min="360" max="1080" step="15" value="600">
           <div class="time-slider-marks"></div>
