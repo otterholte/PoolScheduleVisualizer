@@ -625,16 +625,43 @@ class PoolScheduleApp {
         </div>
       `;
     } else {
-      this.elements.modalContent.innerHTML = laneSchedule.map(entry => `
-        <div class="schedule-item">
-          <div class="schedule-item__color" style="background: ${entry.activity.color}"></div>
-          <span class="schedule-item__time">
-            ${this.schedule.minutesToTimeString(this.schedule.timeToMinutes(entry.start))} - 
-            ${this.schedule.minutesToTimeString(this.schedule.timeToMinutes(entry.end))}
-          </span>
-          <span class="schedule-item__name">${entry.activity.name}</span>
-        </div>
-      `).join('');
+      // Get current time and selected filters
+      const currentTime = this.selectedTimeMinutes;
+      const selectedActivityIds = this.getSelectedActivityIds();
+      const hasFilters = selectedActivityIds.length > 0;
+      
+      this.elements.modalContent.innerHTML = laneSchedule.map(entry => {
+        const startMinutes = this.schedule.timeToMinutes(entry.start);
+        const endMinutes = this.schedule.timeToMinutes(entry.end);
+        
+        // Check if this is the current activity
+        const isCurrent = currentTime >= startMinutes && currentTime < endMinutes;
+        
+        // Check if this matches selected filters
+        const isSelected = hasFilters && selectedActivityIds.includes(entry.activity?.id);
+        
+        // Build CSS classes
+        let itemClass = 'schedule-item';
+        if (isCurrent) itemClass += ' schedule-item--current';
+        if (isSelected) itemClass += ' schedule-item--selected';
+        if (hasFilters && !isSelected) itemClass += ' schedule-item--dimmed';
+        
+        // Build badges
+        let badges = '';
+        if (isCurrent) badges += '<span class="schedule-item__badge schedule-item__badge--now">NOW</span>';
+        if (isSelected) badges += '<span class="schedule-item__badge schedule-item__badge--match">MATCH</span>';
+        
+        return `
+          <div class="${itemClass}">
+            <div class="schedule-item__color" style="background: ${entry.activity.color}"></div>
+            <span class="schedule-item__time">
+              ${this.formatTimeAMPM(entry.start)} - ${this.formatTimeAMPM(entry.end)}
+            </span>
+            <span class="schedule-item__name">${entry.activity.name}</span>
+            <div class="schedule-item__badges">${badges}</div>
+          </div>
+        `;
+      }).join('');
     }
     
     this.elements.modalOverlay.classList.add('modal-overlay--visible');

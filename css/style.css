@@ -1177,6 +1177,56 @@ body::before {
 .schedule-item__name {
   font-weight: 500;
   color: var(--text-primary);
+  flex: 1;
+}
+
+.schedule-item__badges {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.schedule-item__badge {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.schedule-item__badge--now {
+  background: rgba(6, 182, 212, 0.15);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  color: var(--accent-cyan);
+}
+
+.schedule-item__badge--match {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: var(--accent-green);
+}
+
+/* Current activity highlight */
+.schedule-item--current {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 1px var(--accent-cyan), 0 0 12px rgba(6, 182, 212, 0.2);
+}
+
+/* Selected filter match */
+.schedule-item--selected {
+  border-color: var(--accent-green);
+}
+
+/* Dimmed when filters active but not matching */
+.schedule-item--dimmed {
+  opacity: 0.4;
+}
+
+/* Both current and selected */
+.schedule-item--current.schedule-item--selected {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 1px var(--accent-cyan), 0 0 12px rgba(6, 182, 212, 0.2);
 }
 
 /* ==========================================
