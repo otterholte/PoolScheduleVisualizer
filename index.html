@@ -41,18 +41,16 @@
 
   <!-- Main -->
   <main class="main">
-    <!-- Day Selector -->
-    <nav class="day-selector" id="daySelector"></nav>
-
     <!-- Main Content: Floorplan + Legend Sidebar -->
     <div class="main-content">
       <!-- Floorplan Section -->
 <section class="floorplan-section">
         <div class="floorplan-header">
-          <div class="floorplan-header__left">
-            <div class="floorplan-header__badge" id="statusBadge">
-              <span>Pool Open</span>
-            </div>
+          <!-- Left: Time Display -->
+          <span class="floorplan-header__time" id="timeDisplay">10:00 AM</span>
+          
+          <!-- Center: Date Navigation -->
+          <div class="floorplan-header__center">
             <div class="date-nav">
               <button class="date-nav__arrow date-nav__arrow--prev" id="prevDay" title="Previous Day">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -91,7 +89,8 @@
               <div class="date-picker__days" id="pickerDays"></div>
             </div>
           </div>
-          <span class="floorplan-header__time" id="timeDisplay">10:00 AM</span>
+          
+          <!-- Right: Legend Toggle -->
           <button class="legend-toggle" id="legendToggle" title="Toggle Legend">
             <svg class="legend-toggle__collapse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M4 4l5 0M4 4l0 5M4 4l5 5"></path>

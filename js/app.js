@@ -17,9 +17,7 @@ class PoolScheduleApp {
     this.elements = {
       clock: document.getElementById('clock'),
       dateDisplay: document.getElementById('dateDisplay'),
-      daySelector: document.getElementById('daySelector'),
       floorplanTitle: document.getElementById('floorplanTitle'),
-      statusBadge: document.getElementById('statusBadge'),
       timeDisplay: document.getElementById('timeDisplay'),
       timeSlider: document.getElementById('timeSlider'),
       btnNow: document.getElementById('btnNow'),
@@ -53,7 +51,6 @@ class PoolScheduleApp {
       await this.schedule.load();
       
       this.setupClock();
-      this.renderDaySelector();
       this.renderLegend();
       this.setupEventListeners();
       this.updateSliderRange();
@@ -81,43 +78,6 @@ class PoolScheduleApp {
     };
     update();
     setInterval(update, 1000);
-  }
-
-  renderDaySelector() {
-    const container = this.elements.daySelector;
-    container.innerHTML = '';
-    
-    // Get next 7 days
-    const dates = [];
-    const today = new Date();
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      dates.push(this.formatDate(date));
-    }
-    
-    const todayStr = this.formatDate(new Date());
-    
-    dates.forEach(dateStr => {
-      const date = new Date(dateStr + 'T12:00:00');
-      const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-      const monthDay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      
-      const tab = document.createElement('button');
-      tab.className = 'day-tab';
-      tab.dataset.date = dateStr;
-      
-      if (dateStr === this.selectedDate) tab.classList.add('day-tab--active');
-      if (dateStr === todayStr) tab.classList.add('day-tab--today');
-      
-      tab.innerHTML = `
-        <span class="day-tab__name">${dayName}</span>
-        <span class="day-tab__date">${monthDay}</span>
-      `;
-      
-      tab.addEventListener('click', () => this.selectDate(dateStr));
-      container.appendChild(tab);
-    });
   }
 
   renderLegend() {
@@ -322,7 +282,6 @@ class PoolScheduleApp {
     // Now button
     this.elements.btnNow.addEventListener('click', () => {
       this.selectedDate = this.formatDate(new Date());
-      this.highlightActiveDay();
       this.updateSliderRange();
       
       // Clamp current time to pool hours
@@ -487,7 +446,6 @@ class PoolScheduleApp {
 
   selectDate(dateStr) {
     this.selectedDate = dateStr;
-    this.highlightActiveDay();
     this.updateSliderRange();
     this.updateDisplay();
   }
@@ -540,12 +498,6 @@ class PoolScheduleApp {
     }
   }
 
-  highlightActiveDay() {
-    this.elements.daySelector.querySelectorAll('.day-tab').forEach(tab => {
-      tab.classList.toggle('day-tab--active', tab.dataset.date === this.selectedDate);
-    });
-  }
-
   // Legacy method - redirects to new activity filter
   toggleFilter(activityId) {
     this.toggleActivityFilter(activityId);
@@ -585,16 +537,6 @@ class PoolScheduleApp {
       day: 'numeric' 
     });
     this.elements.floorplanTitle.textContent = dateDisplay;
-    
-    // Update status badge
-    const isOpen = this.schedule.isPoolOpen(this.selectedDate, this.selectedTimeMinutes);
-    this.elements.statusBadge.innerHTML = isOpen ? 
-      '<span>Pool Open</span>' : 
-      '<span style="color: #ef4444;">Pool Closed</span>';
-    this.elements.statusBadge.style.background = isOpen ? 
-      'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)';
-    this.elements.statusBadge.style.borderColor = isOpen ? 
-      'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)';
     
     // Update pool lanes
     this.updatePoolLanes();
