@@ -1225,9 +1225,14 @@ body::before {
   border-color: var(--accent-green);
 }
 
-/* Dimmed when filters active but not matching */
+/* Past activities - subtle fade */
+.schedule-item--past {
+  opacity: 0.6;
+}
+
+/* Dimmed when filters active but not matching (future only) */
 .schedule-item--dimmed {
-  opacity: 0.4;
+  opacity: 0.35;
 }
 
 /* Both current and selected */

@@ -634,22 +634,27 @@ class PoolScheduleApp {
         const startMinutes = this.schedule.timeToMinutes(entry.start);
         const endMinutes = this.schedule.timeToMinutes(entry.end);
         
-        // Check if this is the current activity
+        // Check timing
         const isCurrent = currentTime >= startMinutes && currentTime < endMinutes;
+        const isPast = endMinutes <= currentTime;
+        const isFuture = startMinutes > currentTime;
         
-        // Check if this matches selected filters
-        const isSelected = hasFilters && selectedActivityIds.includes(entry.activity?.id);
+        // Check if this matches selected filters (only highlight future matches)
+        const matchesFilter = selectedActivityIds.includes(entry.activity?.id);
+        const showMatch = hasFilters && matchesFilter && (isFuture || isCurrent);
         
         // Build CSS classes
         let itemClass = 'schedule-item';
         if (isCurrent) itemClass += ' schedule-item--current';
-        if (isSelected) itemClass += ' schedule-item--selected';
-        if (hasFilters && !isSelected) itemClass += ' schedule-item--dimmed';
+        if (showMatch && !isCurrent) itemClass += ' schedule-item--selected';
+        if (isPast) itemClass += ' schedule-item--past';
+        // Only dim future non-matches when filters are active
+        if (hasFilters && !matchesFilter && isFuture) itemClass += ' schedule-item--dimmed';
         
         // Build badges
         let badges = '';
         if (isCurrent) badges += '<span class="schedule-item__badge schedule-item__badge--now">NOW</span>';
-        if (isSelected) badges += '<span class="schedule-item__badge schedule-item__badge--match">MATCH</span>';
+        if (showMatch && !isCurrent) badges += '<span class="schedule-item__badge schedule-item__badge--match">MATCH</span>';
         
         return `
           <div class="${itemClass}">
