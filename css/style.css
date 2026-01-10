@@ -388,6 +388,7 @@ body::before {
   background: var(--bg-tertiary);
   gap: 16px;
   position: relative;
+  z-index: 100;
 }
 
 .floorplan-header__center {
@@ -636,6 +637,8 @@ body::before {
   background: var(--bg-secondary);
   display: flex;
   align-items: flex-start;
+  position: relative;
+  z-index: 1;
   gap: 12px;
   flex-shrink: 0;
 }
