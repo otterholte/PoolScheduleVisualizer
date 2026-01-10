@@ -25,6 +25,8 @@ class PoolScheduleApp {
       btnNow: document.getElementById('btnNow'),
       floorplan: document.getElementById('floorplan'),
       legendGrid: document.getElementById('legendGrid'),
+      legendSidebar: document.querySelector('.legend-sidebar'),
+      legendToggle: document.getElementById('legendToggle'),
       clearFilterBtn: document.getElementById('clearFilterBtn'),
       modalOverlay: document.getElementById('modalOverlay'),
       modalTitle: document.getElementById('modalTitle'),
@@ -173,6 +175,13 @@ class PoolScheduleApp {
     
     // Set up clear filter button
     this.elements.clearFilterBtn.addEventListener('click', () => this.clearFilter());
+    
+    // Legend toggle
+    this.elements.legendToggle.addEventListener('click', () => this.toggleLegend());
+  }
+
+  toggleLegend() {
+    this.elements.legendSidebar.classList.toggle('legend-sidebar--hidden');
   }
 
   toggleActivityFilter(activityId) {

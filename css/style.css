@@ -251,20 +251,32 @@ body::before {
 .main {
   position: relative;
   z-index: 1;
-  padding: 24px;
+  padding: 16px 24px;
   max-width: 1800px;
   margin: 0 auto;
+  height: calc(100vh - 72px);
+  display: flex;
+  flex-direction: column;
+}
+
+.day-selector {
+  flex-shrink: 0;
 }
 
 .main-content {
   display: flex;
-  gap: 24px;
-  align-items: flex-start;
+  gap: 16px;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
 }
 
 .floorplan-section {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
 }
 
 /* ==========================================
@@ -274,9 +286,9 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  margin: 0 auto 32px auto;
-  padding: 6px;
+  gap: 6px;
+  margin: 0 auto 16px auto;
+  padding: 4px;
   background: var(--bg-secondary);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-subtle);
@@ -287,7 +299,7 @@ body::before {
 
 .day-tab {
   position: relative;
-  padding: 12px 24px;
+  padding: 8px 16px;
   border: none;
   background: transparent;
   border-radius: var(--radius);
@@ -513,34 +525,77 @@ body::before {
    Floorplan SVG Container
    ========================================== */
 .floorplan-wrapper {
-  padding: 24px;
+  padding: 16px;
   overflow: hidden;
   background: var(--bg-secondary);
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
 }
 
 .floorplan {
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
-  max-width: 1400px;
-  margin: 0 auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* Legend Toggle Button */
+.legend-toggle {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.legend-toggle:hover {
+  background: var(--accent-cyan);
+  color: white;
+}
+
+.legend-toggle svg {
+  width: 20px;
+  height: 20px;
 }
 
 /* ==========================================
    Legend Sidebar
    ========================================== */
 .legend-sidebar {
-  width: 280px;
+  width: 260px;
   flex-shrink: 0;
   background: var(--bg-secondary);
   border-radius: var(--radius-xl);
   border: 1px solid var(--border-subtle);
-  padding: 16px;
+  padding: 12px;
   box-shadow: var(--shadow);
-  max-height: calc(100vh - 180px);
   overflow-y: auto;
-  position: sticky;
-  top: 96px;
+  display: flex;
+  flex-direction: column;
+  transition: all var(--transition-base);
+}
+
+.legend-sidebar--hidden {
+  width: 0;
+  padding: 0;
+  border: none;
+  opacity: 0;
+  overflow: hidden;
 }
 
 .legend-sidebar__header {
