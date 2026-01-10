@@ -638,12 +638,12 @@ body::before {
   align-items: center;
   gap: 4px;
   padding: 2px 8px;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
   border-radius: 20px;
   font-size: 0.65rem;
-  font-weight: 700;
-  color: #f87171;
+  font-weight: 600;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
