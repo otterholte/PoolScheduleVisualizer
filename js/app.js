@@ -656,6 +656,15 @@ class PoolScheduleApp {
     return `${year}-${month}-${day}`;
   }
 
+  // Convert 24-hour time string to 12-hour AM/PM format
+  formatTimeAMPM(timeStr) {
+    if (!timeStr) return '';
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const hour12 = hours % 12 || 12;
+    return `${hour12}:${String(minutes).padStart(2, '0')} ${period}`;
+  }
+
   // Tooltip methods
   showLaneTooltip(e, lane) {
     const section = lane.closest('[data-section]')?.dataset.section || 
@@ -680,7 +689,7 @@ class PoolScheduleApp {
               <span class="lane-tooltip__activity-dot" style="background: ${status.activity.color}"></span>
               ${status.activity.name}
             </div>
-            <div class="lane-tooltip__time">${status.entry.start} - ${status.entry.end}</div>
+            <div class="lane-tooltip__time">${this.formatTimeAMPM(status.entry.start)} - ${this.formatTimeAMPM(status.entry.end)}</div>
           </div>
         `;
       } else {
@@ -700,7 +709,7 @@ class PoolScheduleApp {
                 <span class="lane-tooltip__activity-dot" style="background: ${status.activity.color}"></span>
                 ${status.activity.name}
               </div>
-              <div class="lane-tooltip__time">${status.entry.start} - ${status.entry.end}</div>
+              <div class="lane-tooltip__time">${this.formatTimeAMPM(status.entry.start)} - ${this.formatTimeAMPM(status.entry.end)}</div>
             </div>
           `;
         } else {
@@ -731,7 +740,7 @@ class PoolScheduleApp {
           html += `
             <div class="lane-tooltip__match-item">
               <span class="lane-tooltip__match-dot" style="background: ${slot.activity?.color || '#666'}"></span>
-              ${slot.start} - ${slot.end}
+              ${this.formatTimeAMPM(slot.start)} - ${this.formatTimeAMPM(slot.end)}
             </div>
           `;
         });
