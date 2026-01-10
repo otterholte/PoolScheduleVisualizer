@@ -50,9 +50,45 @@
 <section class="floorplan-section">
         <div class="floorplan-header">
           <div class="floorplan-header__left">
-            <h2 class="floorplan-header__title" id="floorplanTitle">Facility Floorplan</h2>
             <div class="floorplan-header__badge" id="statusBadge">
               <span>Pool Open</span>
+            </div>
+            <div class="date-nav">
+              <button class="date-nav__arrow date-nav__arrow--prev" id="prevDay" title="Previous Day">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+              <button class="date-nav__date" id="datePickerBtn" title="Select Date">
+                <span id="floorplanTitle">Saturday, January 10</span>
+                <svg class="date-nav__calendar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+              </button>
+              <button class="date-nav__arrow date-nav__arrow--next" id="nextDay" title="Next Day">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            </div>
+            <!-- Calendar Dropdown -->
+            <div class="date-picker" id="datePicker">
+              <div class="date-picker__header">
+                <button class="date-picker__nav" id="prevMonth">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <span class="date-picker__month" id="pickerMonth">January 2026</span>
+                <button class="date-picker__nav" id="nextMonth">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+              </div>
+              <div class="date-picker__weekdays">
+                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+              </div>
+              <div class="date-picker__days" id="pickerDays"></div>
             </div>
           </div>
           <span class="floorplan-header__time" id="timeDisplay">10:00 AM</span>

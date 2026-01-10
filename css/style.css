@@ -393,6 +393,7 @@ body::before {
   display: flex;
   align-items: center;
   gap: 12px;
+  position: relative;
 }
 
 .floorplan-header__title {
@@ -400,6 +401,197 @@ body::before {
   font-size: 1rem;
   font-weight: 600;
   color: var(--text-primary);
+}
+
+/* Date Navigation */
+.date-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.date-nav__arrow {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.date-nav__arrow svg {
+  width: 16px;
+  height: 16px;
+}
+
+.date-nav__arrow:hover {
+  background: var(--bg-secondary);
+  border-color: var(--border-light);
+  color: var(--text-primary);
+}
+
+.date-nav__date {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.date-nav__date:hover {
+  background: var(--bg-secondary);
+  border-color: var(--border-light);
+}
+
+.date-nav__calendar-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+  transition: color var(--transition-fast);
+}
+
+.date-nav__date:hover .date-nav__calendar-icon {
+  color: var(--accent-cyan);
+}
+
+/* Date Picker Calendar */
+.date-picker {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 100;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 12px;
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: all var(--transition-fast);
+  min-width: 260px;
+}
+
+.date-picker--open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.date-picker__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.date-picker__month {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.date-picker__nav {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.date-picker__nav svg {
+  width: 14px;
+  height: 14px;
+}
+
+.date-picker__nav:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.date-picker__weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.date-picker__weekdays span {
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 4px;
+  text-transform: uppercase;
+}
+
+.date-picker__days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.date-picker__day {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.date-picker__day:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.date-picker__day--other-month {
+  color: var(--text-muted);
+  opacity: 0.4;
+}
+
+.date-picker__day--today {
+  border: 1px solid var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+.date-picker__day--selected {
+  background: var(--accent-cyan);
+  color: var(--bg-primary);
+  font-weight: 600;
+}
+
+.date-picker__day--selected:hover {
+  background: var(--accent-blue);
+  color: white;
 }
 
 .floorplan-header__time {

@@ -31,8 +31,20 @@ class PoolScheduleApp {
       modalOverlay: document.getElementById('modalOverlay'),
       modalTitle: document.getElementById('modalTitle'),
       modalContent: document.getElementById('modalContent'),
-      modalClose: document.getElementById('modalClose')
+      modalClose: document.getElementById('modalClose'),
+      // Date navigation elements
+      prevDay: document.getElementById('prevDay'),
+      nextDay: document.getElementById('nextDay'),
+      datePickerBtn: document.getElementById('datePickerBtn'),
+      datePicker: document.getElementById('datePicker'),
+      pickerMonth: document.getElementById('pickerMonth'),
+      pickerDays: document.getElementById('pickerDays'),
+      prevMonth: document.getElementById('prevMonth'),
+      nextMonth: document.getElementById('nextMonth')
     };
+    
+    // Calendar picker state
+    this.pickerMonth = new Date();
   }
 
   async init() {
@@ -347,6 +359,124 @@ class PoolScheduleApp {
         }
       });
     });
+    
+    // Date navigation - prev/next day
+    this.elements.prevDay.addEventListener('click', () => this.navigateDay(-1));
+    this.elements.nextDay.addEventListener('click', () => this.navigateDay(1));
+    
+    // Date picker toggle
+    this.elements.datePickerBtn.addEventListener('click', () => this.toggleDatePicker());
+    
+    // Date picker month navigation
+    this.elements.prevMonth.addEventListener('click', () => this.navigateMonth(-1));
+    this.elements.nextMonth.addEventListener('click', () => this.navigateMonth(1));
+    
+    // Close date picker when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!this.elements.datePicker.contains(e.target) && 
+          !this.elements.datePickerBtn.contains(e.target)) {
+        this.closeDatePicker();
+      }
+    });
+  }
+  
+  // Navigate day by offset (-1 for prev, +1 for next)
+  navigateDay(offset) {
+    const current = new Date(this.selectedDate + 'T12:00:00');
+    current.setDate(current.getDate() + offset);
+    this.selectDate(this.formatDate(current));
+  }
+  
+  // Toggle date picker visibility
+  toggleDatePicker() {
+    const isOpen = this.elements.datePicker.classList.contains('date-picker--open');
+    if (isOpen) {
+      this.closeDatePicker();
+    } else {
+      this.openDatePicker();
+    }
+  }
+  
+  openDatePicker() {
+    // Set picker month to selected date's month
+    this.pickerMonth = new Date(this.selectedDate + 'T12:00:00');
+    this.renderDatePicker();
+    this.elements.datePicker.classList.add('date-picker--open');
+  }
+  
+  closeDatePicker() {
+    this.elements.datePicker.classList.remove('date-picker--open');
+  }
+  
+  // Navigate month in date picker
+  navigateMonth(offset) {
+    this.pickerMonth.setMonth(this.pickerMonth.getMonth() + offset);
+    this.renderDatePicker();
+  }
+  
+  // Render the date picker calendar
+  renderDatePicker() {
+    const year = this.pickerMonth.getFullYear();
+    const month = this.pickerMonth.getMonth();
+    
+    // Update month label
+    const monthName = this.pickerMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    this.elements.pickerMonth.textContent = monthName;
+    
+    // Clear days
+    this.elements.pickerDays.innerHTML = '';
+    
+    // Get first day of month and total days
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startingDay = firstDay.getDay();
+    const totalDays = lastDay.getDate();
+    
+    // Get today's date string
+    const todayStr = this.formatDate(new Date());
+    
+    // Fill in days from previous month
+    const prevMonth = new Date(year, month, 0);
+    for (let i = startingDay - 1; i >= 0; i--) {
+      const day = prevMonth.getDate() - i;
+      const btn = this.createDayButton(new Date(year, month - 1, day), true);
+      this.elements.pickerDays.appendChild(btn);
+    }
+    
+    // Fill in current month days
+    for (let day = 1; day <= totalDays; day++) {
+      const date = new Date(year, month, day);
+      const btn = this.createDayButton(date, false);
+      this.elements.pickerDays.appendChild(btn);
+    }
+    
+    // Fill in days from next month
+    const remainingSlots = 42 - this.elements.pickerDays.children.length;
+    for (let day = 1; day <= remainingSlots; day++) {
+      const btn = this.createDayButton(new Date(year, month + 1, day), true);
+      this.elements.pickerDays.appendChild(btn);
+    }
+  }
+  
+  // Create a day button for the date picker
+  createDayButton(date, isOtherMonth) {
+    const dateStr = this.formatDate(date);
+    const todayStr = this.formatDate(new Date());
+    
+    const btn = document.createElement('button');
+    btn.className = 'date-picker__day';
+    btn.textContent = date.getDate();
+    
+    if (isOtherMonth) btn.classList.add('date-picker__day--other-month');
+    if (dateStr === todayStr) btn.classList.add('date-picker__day--today');
+    if (dateStr === this.selectedDate) btn.classList.add('date-picker__day--selected');
+    
+    btn.addEventListener('click', () => {
+      this.selectDate(dateStr);
+      this.closeDatePicker();
+    });
+    
+    return btn;
   }
 
   selectDate(dateStr) {
