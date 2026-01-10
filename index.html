@@ -319,7 +319,14 @@
 
     <!-- Legend -->
     <section class="legend-panel">
-      <h3 class="legend-panel__title">ACTIVITY LEGEND</h3>
+      <div class="legend-panel__header">
+        <h3 class="legend-panel__title">ACTIVITY LEGEND</h3>
+        <div class="legend-panel__filter-info">
+          <span class="legend-panel__filter-label" id="filterLabel"></span>
+          <span class="legend-panel__filter-value" id="filterValue"></span>
+          <button class="legend-panel__clear-btn legend-panel__clear-btn--hidden" id="clearFilterBtn">Clear Filter</button>
+        </div>
+      </div>
       <div class="legend-grid" id="legendGrid"></div>
     </section>
   </main>

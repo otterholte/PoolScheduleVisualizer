@@ -9,6 +9,8 @@ class PoolScheduleApp {
     this.currentDate = new Date();
     this.selectedDate = this.formatDate(this.currentDate);
     this.selectedTimeMinutes = this.getCurrentTimeMinutes();
+    
+    // Filter state: can be null, { type: 'activity', id: 'xxx' }, or { type: 'category', id: 'xxx' }
     this.activeFilter = null;
     
     this.elements = {
@@ -22,6 +24,9 @@ class PoolScheduleApp {
       btnNow: document.getElementById('btnNow'),
       floorplan: document.getElementById('floorplan'),
       legendGrid: document.getElementById('legendGrid'),
+      filterLabel: document.getElementById('filterLabel'),
+      filterValue: document.getElementById('filterValue'),
+      clearFilterBtn: document.getElementById('clearFilterBtn'),
       modalOverlay: document.getElementById('modalOverlay'),
       modalTitle: document.getElementById('modalTitle'),
       modalContent: document.getElementById('modalContent'),
@@ -108,9 +113,9 @@ class PoolScheduleApp {
     const categories = this.schedule.getActivityCategories();
     
     // Group activities by category and sort alphabetically within each
-    const grouped = {};
+    this.categoryGroups = {};
     categories.forEach(cat => {
-      grouped[cat.id] = {
+      this.categoryGroups[cat.id] = {
         name: cat.name,
         activities: activities
           .filter(a => a.category === cat.id)
@@ -118,45 +123,144 @@ class PoolScheduleApp {
       };
     });
     
-    // Render each category
-    let isFirst = true;
+    // Render each category as an accordion card
     categories.forEach(cat => {
-      const group = grouped[cat.id];
+      const group = this.categoryGroups[cat.id];
       if (group.activities.length === 0) return;
       
-      // Add separator (except for first category)
-      if (!isFirst) {
-        const separator = document.createElement('div');
-        separator.className = 'legend-separator';
-        container.appendChild(separator);
-      }
-      isFirst = false;
+      // Create category card
+      const card = document.createElement('div');
+      card.className = 'legend-category-card';
+      card.dataset.category = cat.id;
       
-      // Add category header
+      // Category header (clickable for category filter)
       const header = document.createElement('div');
-      header.className = 'legend-category';
-      header.textContent = group.name;
-      container.appendChild(header);
+      header.className = 'legend-category__header';
+      header.innerHTML = `
+        <span class="legend-category__title">${group.name}</span>
+        <span class="legend-category__count">${group.activities.length}</span>
+      `;
+      header.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.toggleCategoryFilter(cat.id);
+      });
+      card.appendChild(header);
       
-      // Create a row container for activities
-      const row = document.createElement('div');
-      row.className = 'legend-items-row';
+      // Items container
+      const itemsContainer = document.createElement('div');
+      itemsContainer.className = 'legend-category__items';
       
       // Add activities in this category
       group.activities.forEach(activity => {
         const item = document.createElement('div');
         item.className = 'legend-item';
         item.dataset.activity = activity.id;
+        item.dataset.category = cat.id;
         item.innerHTML = `
           <div class="legend-item__color" style="background: ${activity.color}"></div>
           <span class="legend-item__name">${activity.name}</span>
         `;
-        item.addEventListener('click', () => this.toggleFilter(activity.id));
-        row.appendChild(item);
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.toggleActivityFilter(activity.id);
+        });
+        itemsContainer.appendChild(item);
       });
       
-      container.appendChild(row);
+      card.appendChild(itemsContainer);
+      container.appendChild(card);
     });
+    
+    // Set up clear filter button
+    this.elements.clearFilterBtn.addEventListener('click', () => this.clearFilter());
+  }
+
+  toggleActivityFilter(activityId) {
+    if (this.activeFilter && this.activeFilter.type === 'activity' && this.activeFilter.id === activityId) {
+      this.clearFilter();
+    } else {
+      const activity = this.schedule.getActivity(activityId);
+      this.activeFilter = { type: 'activity', id: activityId, name: activity.name };
+      this.updateFilterUI();
+      this.updateLegendStates();
+      this.updateDisplay();
+    }
+  }
+
+  toggleCategoryFilter(categoryId) {
+    if (this.activeFilter && this.activeFilter.type === 'category' && this.activeFilter.id === categoryId) {
+      this.clearFilter();
+    } else {
+      const category = this.categoryGroups[categoryId];
+      this.activeFilter = { 
+        type: 'category', 
+        id: categoryId, 
+        name: category.name,
+        activityIds: category.activities.map(a => a.id)
+      };
+      this.updateFilterUI();
+      this.updateLegendStates();
+      this.updateDisplay();
+    }
+  }
+
+  clearFilter() {
+    this.activeFilter = null;
+    this.updateFilterUI();
+    this.updateLegendStates();
+    this.updateDisplay();
+  }
+
+  updateFilterUI() {
+    if (this.activeFilter) {
+      this.elements.filterLabel.textContent = 'Showing:';
+      this.elements.filterValue.textContent = this.activeFilter.name;
+      this.elements.clearFilterBtn.classList.remove('legend-panel__clear-btn--hidden');
+    } else {
+      this.elements.filterLabel.textContent = '';
+      this.elements.filterValue.textContent = '';
+      this.elements.clearFilterBtn.classList.add('legend-panel__clear-btn--hidden');
+    }
+  }
+
+  updateLegendStates() {
+    const cards = this.elements.legendGrid.querySelectorAll('.legend-category-card');
+    const items = this.elements.legendGrid.querySelectorAll('.legend-item');
+    
+    if (!this.activeFilter) {
+      // No filter - reset all states
+      cards.forEach(card => {
+        card.classList.remove('legend-category-card--active', 'legend-category-card--dimmed');
+      });
+      items.forEach(item => {
+        item.classList.remove('legend-item--active', 'legend-item--dimmed');
+      });
+      return;
+    }
+    
+    if (this.activeFilter.type === 'category') {
+      // Category filter active
+      cards.forEach(card => {
+        const isActive = card.dataset.category === this.activeFilter.id;
+        card.classList.toggle('legend-category-card--active', isActive);
+        card.classList.toggle('legend-category-card--dimmed', !isActive);
+      });
+      items.forEach(item => {
+        const isInCategory = item.dataset.category === this.activeFilter.id;
+        item.classList.remove('legend-item--active');
+        item.classList.toggle('legend-item--dimmed', !isInCategory);
+      });
+    } else if (this.activeFilter.type === 'activity') {
+      // Activity filter active
+      cards.forEach(card => {
+        card.classList.remove('legend-category-card--active', 'legend-category-card--dimmed');
+      });
+      items.forEach(item => {
+        const isActive = item.dataset.activity === this.activeFilter.id;
+        item.classList.toggle('legend-item--active', isActive);
+        item.classList.toggle('legend-item--dimmed', !isActive);
+      });
+    }
   }
 
   setupEventListeners() {
@@ -211,19 +315,21 @@ class PoolScheduleApp {
     });
   }
 
+  // Legacy method - redirects to new activity filter
   toggleFilter(activityId) {
-    if (this.activeFilter === activityId) {
-      this.activeFilter = null;
-    } else {
-      this.activeFilter = activityId;
+    this.toggleActivityFilter(activityId);
+  }
+
+  // Check if an activity matches the current filter
+  isActivityMatchingFilter(activityId) {
+    if (!this.activeFilter) return true;
+    
+    if (this.activeFilter.type === 'activity') {
+      return activityId === this.activeFilter.id;
+    } else if (this.activeFilter.type === 'category') {
+      return this.activeFilter.activityIds.includes(activityId);
     }
-    
-    // Update legend item states
-    this.elements.legendGrid.querySelectorAll('.legend-item').forEach(item => {
-      item.classList.toggle('legend-item--active', item.dataset.activity === this.activeFilter);
-    });
-    
-    this.updateDisplay();
+    return true;
   }
 
   updateTimeSlider() {
@@ -297,7 +403,7 @@ class PoolScheduleApp {
     
     // Apply filter highlight
     if (this.activeFilter) {
-      if (activity.id === this.activeFilter) {
+      if (this.isActivityMatchingFilter(activity.id)) {
         laneEl.style.filter = 'brightness(1.3) drop-shadow(0 0 10px ' + activity.color + ')';
       } else {
         laneEl.style.opacity = '0.3';
