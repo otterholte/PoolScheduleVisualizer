@@ -10,8 +10,9 @@ class PoolScheduleApp {
     this.selectedDate = this.formatDate(this.currentDate);
     this.selectedTimeMinutes = this.getCurrentTimeMinutes();
     
-    // Filter state: can be null, { type: 'activity', id: 'xxx' }, or { type: 'category', id: 'xxx' }
-    this.activeFilter = null;
+    // Filter state: array of selected items
+    // Each item: { type: 'activity'|'category', id: 'xxx', name: 'xxx', activityIds?: [...] }
+    this.activeFilters = [];
     
     this.elements = {
       clock: document.getElementById('clock'),
@@ -177,45 +178,66 @@ class PoolScheduleApp {
   }
 
   toggleActivityFilter(activityId) {
-    if (this.activeFilter && this.activeFilter.type === 'activity' && this.activeFilter.id === activityId) {
-      this.clearFilter();
+    const existingIndex = this.activeFilters.findIndex(
+      f => f.type === 'activity' && f.id === activityId
+    );
+    
+    if (existingIndex !== -1) {
+      // Remove if already selected
+      this.activeFilters.splice(existingIndex, 1);
     } else {
       const activity = this.schedule.getActivity(activityId);
-      this.activeFilter = { type: 'activity', id: activityId, name: activity.name };
-      this.updateFilterUI();
-      this.updateLegendStates();
-      this.updateDisplay();
+      this.activeFilters.push({ 
+        type: 'activity', 
+        id: activityId, 
+        name: activity.name 
+      });
     }
+    
+    this.updateFilterUI();
+    this.updateLegendStates();
+    this.updateDisplay();
   }
 
   toggleCategoryFilter(categoryId) {
-    if (this.activeFilter && this.activeFilter.type === 'category' && this.activeFilter.id === categoryId) {
-      this.clearFilter();
+    const existingIndex = this.activeFilters.findIndex(
+      f => f.type === 'category' && f.id === categoryId
+    );
+    
+    if (existingIndex !== -1) {
+      // Remove if already selected
+      this.activeFilters.splice(existingIndex, 1);
     } else {
       const category = this.categoryGroups[categoryId];
-      this.activeFilter = { 
+      this.activeFilters.push({ 
         type: 'category', 
         id: categoryId, 
         name: category.name,
         activityIds: category.activities.map(a => a.id)
-      };
-      this.updateFilterUI();
-      this.updateLegendStates();
-      this.updateDisplay();
+      });
     }
+    
+    this.updateFilterUI();
+    this.updateLegendStates();
+    this.updateDisplay();
   }
 
   clearFilter() {
-    this.activeFilter = null;
+    this.activeFilters = [];
     this.updateFilterUI();
     this.updateLegendStates();
     this.updateDisplay();
   }
 
   updateFilterUI() {
-    if (this.activeFilter) {
+    if (this.activeFilters.length > 0) {
       this.elements.filterLabel.textContent = 'Showing:';
-      this.elements.filterValue.textContent = this.activeFilter.name;
+      const names = this.activeFilters.map(f => f.name);
+      if (names.length <= 2) {
+        this.elements.filterValue.textContent = names.join(', ');
+      } else {
+        this.elements.filterValue.textContent = `${names.length} selections`;
+      }
       this.elements.clearFilterBtn.classList.remove('legend-panel__clear-btn--hidden');
     } else {
       this.elements.filterLabel.textContent = '';
@@ -228,7 +250,7 @@ class PoolScheduleApp {
     const cards = this.elements.legendGrid.querySelectorAll('.legend-category-card');
     const items = this.elements.legendGrid.querySelectorAll('.legend-item');
     
-    if (!this.activeFilter) {
+    if (this.activeFilters.length === 0) {
       // No filter - reset all states
       cards.forEach(card => {
         card.classList.remove('legend-category-card--active', 'legend-category-card--dimmed');
@@ -239,29 +261,35 @@ class PoolScheduleApp {
       return;
     }
     
-    if (this.activeFilter.type === 'category') {
-      // Category filter active
-      cards.forEach(card => {
-        const isActive = card.dataset.category === this.activeFilter.id;
-        card.classList.toggle('legend-category-card--active', isActive);
-        card.classList.toggle('legend-category-card--dimmed', !isActive);
-      });
-      items.forEach(item => {
-        const isInCategory = item.dataset.category === this.activeFilter.id;
-        item.classList.remove('legend-item--active');
-        item.classList.toggle('legend-item--dimmed', !isInCategory);
-      });
-    } else if (this.activeFilter.type === 'activity') {
-      // Activity filter active
-      cards.forEach(card => {
-        card.classList.remove('legend-category-card--active', 'legend-category-card--dimmed');
-      });
-      items.forEach(item => {
-        const isActive = item.dataset.activity === this.activeFilter.id;
-        item.classList.toggle('legend-item--active', isActive);
-        item.classList.toggle('legend-item--dimmed', !isActive);
-      });
-    }
+    // Get all selected category IDs and activity IDs
+    const selectedCategoryIds = new Set(
+      this.activeFilters.filter(f => f.type === 'category').map(f => f.id)
+    );
+    const selectedActivityIds = new Set(
+      this.activeFilters.filter(f => f.type === 'activity').map(f => f.id)
+    );
+    
+    // Update category cards
+    cards.forEach(card => {
+      const isSelected = selectedCategoryIds.has(card.dataset.category);
+      card.classList.toggle('legend-category-card--active', isSelected);
+      // Don't dim categories - only highlight selected ones
+      card.classList.remove('legend-category-card--dimmed');
+    });
+    
+    // Update activity items
+    items.forEach(item => {
+      const activityId = item.dataset.activity;
+      const categoryId = item.dataset.category;
+      
+      // Check if this activity is directly selected or in a selected category
+      const isDirectlySelected = selectedActivityIds.has(activityId);
+      const isInSelectedCategory = selectedCategoryIds.has(categoryId);
+      const isMatching = isDirectlySelected || isInSelectedCategory;
+      
+      item.classList.toggle('legend-item--active', isDirectlySelected);
+      item.classList.toggle('legend-item--dimmed', !isMatching);
+    });
   }
 
   setupEventListeners() {
@@ -380,16 +408,19 @@ class PoolScheduleApp {
     this.toggleActivityFilter(activityId);
   }
 
-  // Check if an activity matches the current filter
+  // Check if an activity matches any of the active filters
   isActivityMatchingFilter(activityId) {
-    if (!this.activeFilter) return true;
+    if (this.activeFilters.length === 0) return true;
     
-    if (this.activeFilter.type === 'activity') {
-      return activityId === this.activeFilter.id;
-    } else if (this.activeFilter.type === 'category') {
-      return this.activeFilter.activityIds.includes(activityId);
+    for (const filter of this.activeFilters) {
+      if (filter.type === 'activity' && filter.id === activityId) {
+        return true;
+      }
+      if (filter.type === 'category' && filter.activityIds.includes(activityId)) {
+        return true;
+      }
     }
-    return true;
+    return false;
   }
 
   updateTimeSlider() {
@@ -461,7 +492,7 @@ class PoolScheduleApp {
     const activity = status.activity;
     
     // Apply filter highlight
-    if (this.activeFilter) {
+    if (this.activeFilters.length > 0) {
       if (this.isActivityMatchingFilter(activity.id)) {
         // Matching activity - show full color with glow
         laneEl.setAttribute('fill', activity.color);

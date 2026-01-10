@@ -55,14 +55,16 @@
 
       <!-- Time Navigation -->
       <div class="time-nav">
-        <span class="time-nav__label">Viewing schedule at:</span>
-        <span class="time-nav__display" id="timeDisplay">Now</span>
-        <div class="time-slider-wrapper">
-          <div class="time-slider-container">
-            <input type="range" class="time-slider" id="timeSlider" min="360" max="1080" step="15" value="600">
-            <div class="time-slider-marks"></div>
+        <div class="time-nav__header">
+          <div class="time-nav__info">
+            <span class="time-nav__label">Viewing schedule at:</span>
+            <span class="time-nav__display" id="timeDisplay">Now</span>
           </div>
           <button class="btn btn--primary btn--sm" id="btnNow">Now</button>
+        </div>
+        <div class="time-slider-container">
+          <input type="range" class="time-slider" id="timeSlider" min="360" max="1080" step="15" value="600">
+          <div class="time-slider-marks"></div>
         </div>
       </div>
 

@@ -387,9 +387,21 @@ body::before {
   padding: 20px 28px;
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
-  align-items: center;
-  gap: 24px;
+  flex-direction: column;
+  gap: 16px;
   background: var(--bg-secondary);
+}
+
+.time-nav__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.time-nav__info {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
 }
 
 .time-nav__label {
@@ -400,21 +412,12 @@ body::before {
 
 .time-nav__display {
   font-family: var(--font-display);
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 700;
   color: var(--accent-cyan);
-  min-width: 140px;
-}
-
-.time-slider-wrapper {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 16px;
 }
 
 .time-slider-container {
-  flex: 1;
   position: relative;
   padding-bottom: 24px;
 }
