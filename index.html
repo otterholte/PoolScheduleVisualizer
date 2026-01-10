@@ -47,19 +47,24 @@
     <!-- Main Content: Floorplan + Legend Sidebar -->
     <div class="main-content">
       <!-- Floorplan Section -->
-      <section class="floorplan-section">
-        <button class="legend-toggle" id="legendToggle" title="Toggle Legend">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 6h16M4 12h16M4 18h16"></path>
-          </svg>
-        </button>
-      <div class="floorplan-header">
-        <h2 class="floorplan-header__title" id="floorplanTitle">Facility Floorplan</h2>
-        <span class="floorplan-header__time" id="timeDisplay">10:00 AM</span>
-        <div class="floorplan-header__badge" id="statusBadge">
-          <span>Pool Open</span>
+<section class="floorplan-section">
+        <div class="floorplan-header">
+          <div class="floorplan-header__left">
+            <h2 class="floorplan-header__title" id="floorplanTitle">Facility Floorplan</h2>
+            <div class="floorplan-header__badge" id="statusBadge">
+              <span>Pool Open</span>
+            </div>
+          </div>
+          <span class="floorplan-header__time" id="timeDisplay">10:00 AM</span>
+          <button class="legend-toggle" id="legendToggle" title="Toggle Legend">
+            <svg class="legend-toggle__expand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
+            </svg>
+            <svg class="legend-toggle__collapse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 14h6v6M14 4h6v6M10 14l-7 7M21 3l-7 7"></path>
+            </svg>
+          </button>
         </div>
-      </div>
 
       <!-- Time Navigation -->
       <div class="time-nav">

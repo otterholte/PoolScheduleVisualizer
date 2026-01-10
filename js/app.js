@@ -182,6 +182,7 @@ class PoolScheduleApp {
 
   toggleLegend() {
     this.elements.legendSidebar.classList.toggle('legend-sidebar--hidden');
+    this.elements.legendToggle.classList.toggle('legend-toggle--collapsed');
   }
 
   toggleActivityFilter(activityId) {
