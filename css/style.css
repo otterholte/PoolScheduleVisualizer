@@ -340,19 +340,30 @@ body::before {
 }
 
 .floorplan-header {
-  padding: 20px 28px;
+  padding: 16px 28px;
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
   justify-content: space-between;
   background: var(--bg-tertiary);
+  gap: 16px;
 }
 
 .floorplan-header__title {
   font-family: var(--font-display);
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.floorplan-header__time {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  text-shadow: 0 2px 10px rgba(6, 182, 212, 0.3);
+  flex: 1;
+  text-align: center;
 }
 
 .floorplan-header__badge {
@@ -384,26 +395,9 @@ body::before {
 
 /* Time Navigation */
 .time-nav {
-  padding: 16px 28px 16px;
+  padding: 16px 28px;
   border-bottom: 1px solid var(--border-subtle);
   background: var(--bg-secondary);
-  position: relative;
-}
-
-.time-nav__floating-label {
-  text-align: center;
-  margin-bottom: 12px;
-}
-
-.time-nav__display {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--accent-cyan);
-  text-shadow: 0 2px 10px rgba(6, 182, 212, 0.3);
-}
-
-.time-nav__slider-row {
   display: flex;
   align-items: flex-start;
   gap: 16px;
@@ -412,7 +406,7 @@ body::before {
 .time-slider-container {
   flex: 1;
   position: relative;
-  padding-bottom: 28px;
+  padding-bottom: 24px;
 }
 
 .time-slider {

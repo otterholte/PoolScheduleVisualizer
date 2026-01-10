@@ -48,6 +48,7 @@
     <section class="floorplan-section">
       <div class="floorplan-header">
         <h2 class="floorplan-header__title" id="floorplanTitle">Facility Floorplan</h2>
+        <span class="floorplan-header__time" id="timeDisplay">10:00 AM</span>
         <div class="floorplan-header__badge" id="statusBadge">
           <span>Pool Open</span>
         </div>
@@ -55,16 +56,11 @@
 
       <!-- Time Navigation -->
       <div class="time-nav">
-        <div class="time-nav__floating-label" id="timeFloatingLabel">
-          <span class="time-nav__display" id="timeDisplay">10:00 AM</span>
+        <div class="time-slider-container">
+          <input type="range" class="time-slider" id="timeSlider" min="360" max="1080" step="15" value="600">
+          <div class="time-slider-marks"></div>
         </div>
-        <div class="time-nav__slider-row">
-          <div class="time-slider-container">
-            <input type="range" class="time-slider" id="timeSlider" min="360" max="1080" step="15" value="600">
-            <div class="time-slider-marks"></div>
-          </div>
-          <button class="btn btn--primary btn--sm" id="btnNow">Now</button>
-        </div>
+        <button class="btn btn--primary btn--sm" id="btnNow">Now</button>
       </div>
 
       <!-- Floorplan -->
