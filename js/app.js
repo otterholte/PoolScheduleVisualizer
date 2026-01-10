@@ -777,9 +777,6 @@ class PoolScheduleApp {
       }
     }
     
-    // Add click hint
-    html += `<div class="lane-tooltip__hint">Click for full schedule</div>`;
-    
     this.elements.laneTooltipContent.innerHTML = html;
     this.elements.laneTooltip.classList.add('lane-tooltip--visible');
     this.positionTooltip(e);
