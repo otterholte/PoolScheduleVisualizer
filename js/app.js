@@ -45,6 +45,7 @@ class PoolScheduleApp {
     
     // Calendar picker state
     this.pickerMonth = new Date();
+    this.datePickerOpen = false;
   }
 
   async init() {
@@ -389,8 +390,7 @@ class PoolScheduleApp {
   
   // Toggle date picker visibility
   toggleDatePicker() {
-    const isOpen = this.elements.datePicker.classList.contains('date-picker--open');
-    if (isOpen) {
+    if (this.datePickerOpen) {
       this.closeDatePicker();
     } else {
       this.openDatePicker();
@@ -402,10 +402,12 @@ class PoolScheduleApp {
     this.pickerMonth = new Date(this.selectedDate + 'T12:00:00');
     this.renderDatePicker();
     this.elements.datePicker.classList.add('date-picker--open');
+    this.datePickerOpen = true;
   }
   
   closeDatePicker() {
     this.elements.datePicker.classList.remove('date-picker--open');
+    this.datePickerOpen = false;
   }
   
   // Navigate month in date picker
@@ -473,8 +475,10 @@ class PoolScheduleApp {
     
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
+      e.preventDefault();
       this.selectDate(dateStr);
-      this.closeDatePicker();
+      // Force close with timeout to ensure state updates
+      setTimeout(() => this.closeDatePicker(), 0);
     });
     
     return btn;
