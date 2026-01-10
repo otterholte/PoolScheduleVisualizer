@@ -18,25 +18,33 @@
       { "id": "deep_north", "name": "Deep Well North", "lanes": ["North"] }
     ]
   },
+  "activityCategories": [
+    { "id": "open", "name": "Open Swim" },
+    { "id": "clubs", "name": "Clubs & Teams" },
+    { "id": "classes", "name": "Classes & Programs" },
+    { "id": "specialty", "name": "Specialty Training" },
+    { "id": "therapy", "name": "Therapy & Adaptive" },
+    { "id": "private", "name": "Private Groups" }
+  ],
   "activities": [
-    { "id": "open_lap", "name": "Open Lap Swimming", "color": "#22c55e", "shortName": "Open" },
-    { "id": "closed", "name": "Closed", "color": "#6b7280", "shortName": "Closed" },
-    { "id": "learn_to_swim", "name": "Learn-to-Swim", "color": "#a855f7", "shortName": "Lessons" },
-    { "id": "aqua_fitness", "name": "Aqua Fitness", "color": "#6366f1", "shortName": "Fitness" },
-    { "id": "dive_rescue", "name": "Dive Rescue Training", "color": "#1e293b", "shortName": "Rescue" },
-    { "id": "diving", "name": "Diving Practice", "color": "#0ea5e9", "shortName": "Diving" },
-    { "id": "water_polo", "name": "Water Polo", "color": "#14b8a6", "shortName": "Polo" },
-    { "id": "masters", "name": "Masters Swim Club", "color": "#3b82f6", "shortName": "Masters" },
-    { "id": "swim_team", "name": "Competitive Swim Team", "color": "#1d4ed8", "shortName": "Team" },
-    { "id": "high_school", "name": "High School Swim", "color": "#7c3aed", "shortName": "HS Swim" },
-    { "id": "youth_swim", "name": "Youth Swimming", "color": "#8b5cf6", "shortName": "Youth" },
-    { "id": "private_rental", "name": "Private Rental", "color": "#f97316", "shortName": "Rental" },
-    { "id": "therapy_session", "name": "Therapy Sessions", "color": "#ec4899", "shortName": "Therapy" },
-    { "id": "adaptive", "name": "Adaptive Recreation", "color": "#f59e0b", "shortName": "Adaptive" },
-    { "id": "scuba", "name": "SCUBA Training", "color": "#78716c", "shortName": "SCUBA" },
-    { "id": "university", "name": "University Swim & Dive", "color": "#047857", "shortName": "Univ" },
-    { "id": "kayak", "name": "Kayak / Canoe", "color": "#eab308", "shortName": "Kayak" },
-    { "id": "synchro", "name": "Synchronized Swimming", "color": "#e11d48", "shortName": "Synchro" }
+    { "id": "open_lap", "name": "Open Lap Swimming", "color": "#22c55e", "shortName": "Open", "category": "open" },
+    { "id": "closed", "name": "Closed", "color": "#6b7280", "shortName": "Closed", "category": "open" },
+    { "id": "masters", "name": "Masters Swim Club", "color": "#3b82f6", "shortName": "Masters", "category": "clubs" },
+    { "id": "swim_team", "name": "Competitive Swim Team", "color": "#1d4ed8", "shortName": "Team", "category": "clubs" },
+    { "id": "diving", "name": "Diving Practice", "color": "#0ea5e9", "shortName": "Diving", "category": "clubs" },
+    { "id": "high_school", "name": "High School Swim", "color": "#7c3aed", "shortName": "HS Swim", "category": "clubs" },
+    { "id": "synchro", "name": "Synchronized Swimming", "color": "#e11d48", "shortName": "Synchro", "category": "clubs" },
+    { "id": "university", "name": "University Swim & Dive", "color": "#047857", "shortName": "Univ", "category": "clubs" },
+    { "id": "water_polo", "name": "Water Polo", "color": "#14b8a6", "shortName": "Polo", "category": "clubs" },
+    { "id": "aqua_fitness", "name": "Aqua Fitness", "color": "#6366f1", "shortName": "Fitness", "category": "classes" },
+    { "id": "learn_to_swim", "name": "Learn-to-Swim", "color": "#a855f7", "shortName": "Lessons", "category": "classes" },
+    { "id": "youth_swim", "name": "Youth Swimming", "color": "#8b5cf6", "shortName": "Youth", "category": "classes" },
+    { "id": "dive_rescue", "name": "Dive Rescue Training", "color": "#1e293b", "shortName": "Rescue", "category": "specialty" },
+    { "id": "kayak", "name": "Kayak / Canoe", "color": "#eab308", "shortName": "Kayak", "category": "specialty" },
+    { "id": "scuba", "name": "SCUBA Training", "color": "#78716c", "shortName": "SCUBA", "category": "specialty" },
+    { "id": "adaptive", "name": "Adaptive Recreation", "color": "#f59e0b", "shortName": "Adaptive", "category": "therapy" },
+    { "id": "therapy_session", "name": "Therapy Sessions", "color": "#ec4899", "shortName": "Therapy", "category": "therapy" },
+    { "id": "private_rental", "name": "Private Rental", "color": "#f97316", "shortName": "Rental", "category": "private" }
   ],
   "schedules": {
     "2026-01-09": [

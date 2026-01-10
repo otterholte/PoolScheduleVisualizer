@@ -105,17 +105,57 @@ class PoolScheduleApp {
     container.innerHTML = '';
     
     const activities = this.schedule.getActivities();
+    const categories = this.schedule.getActivityCategories();
     
-    activities.forEach(activity => {
-      const item = document.createElement('div');
-      item.className = 'legend-item';
-      item.dataset.activity = activity.id;
-      item.innerHTML = `
-        <div class="legend-item__color" style="background: ${activity.color}"></div>
-        <span class="legend-item__name">${activity.name}</span>
-      `;
-      item.addEventListener('click', () => this.toggleFilter(activity.id));
-      container.appendChild(item);
+    // Group activities by category and sort alphabetically within each
+    const grouped = {};
+    categories.forEach(cat => {
+      grouped[cat.id] = {
+        name: cat.name,
+        activities: activities
+          .filter(a => a.category === cat.id)
+          .sort((a, b) => a.name.localeCompare(b.name))
+      };
+    });
+    
+    // Render each category
+    let isFirst = true;
+    categories.forEach(cat => {
+      const group = grouped[cat.id];
+      if (group.activities.length === 0) return;
+      
+      // Add separator (except for first category)
+      if (!isFirst) {
+        const separator = document.createElement('div');
+        separator.className = 'legend-separator';
+        container.appendChild(separator);
+      }
+      isFirst = false;
+      
+      // Add category header
+      const header = document.createElement('div');
+      header.className = 'legend-category';
+      header.textContent = group.name;
+      container.appendChild(header);
+      
+      // Create a row container for activities
+      const row = document.createElement('div');
+      row.className = 'legend-items-row';
+      
+      // Add activities in this category
+      group.activities.forEach(activity => {
+        const item = document.createElement('div');
+        item.className = 'legend-item';
+        item.dataset.activity = activity.id;
+        item.innerHTML = `
+          <div class="legend-item__color" style="background: ${activity.color}"></div>
+          <span class="legend-item__name">${activity.name}</span>
+        `;
+        item.addEventListener('click', () => this.toggleFilter(activity.id));
+        row.appendChild(item);
+      });
+      
+      container.appendChild(row);
     });
   }
 

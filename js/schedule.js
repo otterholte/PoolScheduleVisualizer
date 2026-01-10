@@ -52,6 +52,13 @@ class ScheduleManager {
   }
 
   /**
+   * Get activity categories
+   */
+  getActivityCategories() {
+    return this.data?.activityCategories || [];
+  }
+
+  /**
    * Get activity by ID
    */
   getActivity(id) {
