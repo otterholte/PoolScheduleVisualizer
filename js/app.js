@@ -21,7 +21,6 @@ class PoolScheduleApp {
       floorplanTitle: document.getElementById('floorplanTitle'),
       statusBadge: document.getElementById('statusBadge'),
       timeDisplay: document.getElementById('timeDisplay'),
-      timeFloatingLabel: document.getElementById('timeFloatingLabel'),
       timeSlider: document.getElementById('timeSlider'),
       btnNow: document.getElementById('btnNow'),
       floorplan: document.getElementById('floorplan'),
@@ -294,13 +293,7 @@ class PoolScheduleApp {
     // Time slider
     this.elements.timeSlider.addEventListener('input', (e) => {
       this.selectedTimeMinutes = parseInt(e.target.value, 10);
-      this.updateFloatingLabelPosition();
       this.updateDisplay();
-    });
-    
-    // Update floating label on window resize
-    window.addEventListener('resize', () => {
-      this.updateFloatingLabelPosition();
     });
     
     // Now button
@@ -429,25 +422,6 @@ class PoolScheduleApp {
 
   updateTimeSlider() {
     this.elements.timeSlider.value = this.selectedTimeMinutes;
-    this.updateFloatingLabelPosition();
-  }
-
-  updateFloatingLabelPosition() {
-    const slider = this.elements.timeSlider;
-    const label = this.elements.timeFloatingLabel;
-    if (!slider || !label) return;
-    
-    const min = parseInt(slider.min);
-    const max = parseInt(slider.max);
-    const value = parseInt(slider.value);
-    const percentage = (value - min) / (max - min);
-    
-    // Account for thumb width (roughly 20px)
-    const sliderWidth = slider.offsetWidth;
-    const thumbOffset = 10; // half of thumb width
-    const position = percentage * (sliderWidth - thumbOffset * 2) + thumbOffset;
-    
-    label.style.left = `${position}px`;
   }
 
   updateDisplay() {
