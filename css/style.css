@@ -596,6 +596,29 @@ body::before {
   height: calc(100vh - 72px);
   position: sticky;
   top: 72px;
+  
+  /* Custom Scrollbar - WebKit (Chrome, Safari, Edge) */
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-tertiary) transparent;
+}
+
+.legend-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.legend-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.legend-sidebar::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+  transition: background var(--transition-fast);
+}
+
+.legend-sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }
 
 .legend-sidebar--hidden {
