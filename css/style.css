@@ -70,7 +70,6 @@
 html {
   font-size: 16px;
   scroll-behavior: smooth;
-  overflow-x: hidden;
 }
 
 body {
@@ -264,7 +263,6 @@ body::before {
   display: flex;
   gap: 12px;
   align-items: flex-start;
-  min-height: calc(100vh - 72px);
 }
 
 .floorplan-section {
@@ -353,7 +351,6 @@ body::before {
   background: var(--bg-secondary);
   border-radius: var(--radius-xl);
   border: 1px solid var(--border-subtle);
-  overflow: hidden;
   box-shadow: var(--shadow-lg);
 }
 
@@ -526,9 +523,7 @@ body::before {
    ========================================== */
 .floorplan-wrapper {
   padding: 16px;
-  overflow: hidden;
   background: var(--bg-secondary);
-  flex: 1;
 }
 
 .floorplan {
