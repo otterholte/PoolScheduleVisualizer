@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EPIC Aquatic Center - Live Pool Schedule</title>
+  
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏊</text></svg>">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header__brand">
+      <div class="header__logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M2,12c.75-1.5,4.5-6,10-6s9.25,4.5,10,6c-.75,1.5-4.5,6-10,6S2.75,13.5,2,12Z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M2,20c2-1,4-2,6-1s4,2,6,1,4-2,6-1"></path>
+        </svg>
+      </div>
+      <div>
+        <h1 class="header__title">EPIC Aquatic Center</h1>
+        <p class="header__subtitle">Real-time Lane Availability</p>
+      </div>
+    </div>
+    
+    <nav class="header__nav">
+      <div class="header__time">
+        <span class="header__clock" id="clock">--:--</span>
+        <span class="header__date" id="dateDisplay">Loading...</span>
+      </div>
+      <a href="admin.html" class="btn btn--ghost btn--icon" title="Admin Panel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4,15a1.65,1.65,0,0,0,.33,1.82l.06.06a2,2,0,0,1,0,2.83,2,2,0,0,1-2.83,0l-.06-.06a1.65,1.65,0,0,0-1.82-.33,1.65,1.65,0,0,0-1,1.51V21a2,2,0,0,1-4,0v-.09A1.65,1.65,0,0,0,9,19.4a1.65,1.65,0,0,0-1.82.33l-.06.06a2,2,0,1,1-2.83-2.83l.06-.06a1.65,1.65,0,0,0,.33-1.82,1.65,1.65,0,0,0-1.51-1H3a2,2,0,0,1,0-4h.09A1.65,1.65,0,0,0,4.6,9a1.65,1.65,0,0,0-.33-1.82l-.06-.06a2,2,0,1,1,2.83-2.83l.06.06a1.65,1.65,0,0,0,1.82.33H9a1.65,1.65,0,0,0,1-1.51V3a2,2,0,0,1,4,0v.09a1.65,1.65,0,0,0,1,1.51,1.65,1.65,0,0,0,1.82-.33l.06-.06a2,2,0,1,1,2.83,2.83l-.06.06a1.65,1.65,0,0,0-.33,1.82V9a1.65,1.65,0,0,0,1.51,1H21a2,2,0,0,1,0,4h-.09a1.65,1.65,0,0,0-1.51,1Z"></path>
+        </svg>
+      </a>
+    </nav>
+  </header>
+
+  <!-- Main -->
+  <main class="main">
+    <!-- Day Selector -->
+    <nav class="day-selector" id="daySelector"></nav>
+
+    <!-- Floorplan Section -->
+    <section class="floorplan-section">
+      <div class="floorplan-header">
+        <h2 class="floorplan-header__title" id="floorplanTitle">Facility Floorplan</h2>
+        <div class="floorplan-header__badge" id="statusBadge">
+          <span>Pool Open</span>
+        </div>
+      </div>
+
+      <!-- Time Navigation -->
+      <div class="time-nav">
+        <span class="time-nav__label">Viewing schedule at:</span>
+        <span class="time-nav__display" id="timeDisplay">Now</span>
+        <div class="time-slider-wrapper">
+          <div class="time-slider-container">
+            <input type="range" class="time-slider" id="timeSlider" min="330" max="1200" step="15" value="600">
+          </div>
+          <div class="time-slider-marks">
+            <span class="time-mark" style="left: 3.4%">6AM</span>
+            <span class="time-mark" style="left: 17.2%">8AM</span>
+            <span class="time-mark" style="left: 31%">10AM</span>
+            <span class="time-mark" style="left: 44.8%">12PM</span>
+            <span class="time-mark" style="left: 58.6%">2PM</span>
+            <span class="time-mark" style="left: 72.4%">4PM</span>
+            <span class="time-mark" style="left: 86.2%">6PM</span>
+            <span class="time-mark" style="left: 100%">8PM</span>
+          </div>
+          <button class="btn btn--primary btn--sm" id="btnNow">Now</button>
+        </div>
+      </div>
+
+      <!-- Floorplan -->
+      <div class="floorplan-wrapper">
+        <svg class="floorplan" id="floorplan" viewBox="0 0 1200 700" xmlns="http://www.w3.org/2000/svg">
+          <!-- Background / Building -->
+          <defs>
+            <!-- Water Gradient -->
+            <linearGradient id="waterGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" style="stop-color:#0ea5e9;stop-opacity:0.9" />
+              <stop offset="100%" style="stop-color:#0369a1;stop-opacity:0.9" />
+            </linearGradient>
+            
+            <!-- Hot Tub Gradient -->
+            <radialGradient id="hotTubGradient">
+              <stop offset="0%" style="stop-color:#14b8a6;stop-opacity:0.9" />
+              <stop offset="100%" style="stop-color:#0f766e;stop-opacity:0.9" />
+            </radialGradient>
+            
+            <!-- Floor Pattern -->
+            <pattern id="floorPattern" patternUnits="userSpaceOnUse" width="20" height="20">
+              <rect width="20" height="20" fill="#1a1f2e"/>
+              <rect width="19" height="19" fill="#1e2433"/>
+            </pattern>
+            
+            <!-- Lane Lines -->
+            <pattern id="laneLines" patternUnits="userSpaceOnUse" width="10" height="60">
+              <line x1="5" y1="0" x2="5" y2="60" stroke="rgba(255,255,255,0.3)" stroke-width="1" stroke-dasharray="4,4"/>
+            </pattern>
+
+            <!-- Glow Filter -->
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+
+          <!-- Building Floor -->
+          <rect x="0" y="0" width="1200" height="700" fill="#334155"/>
+          
+          <!-- Walking Deck - Main Area -->
+          <rect x="30" y="30" width="1140" height="640" rx="20" fill="#3d4f66" stroke="#4b6082" stroke-width="2"/>
+          
+          <!-- ========== ENTRANCE AREA ========== -->
+          <g id="entrance">
+            <rect x="40" y="40" width="120" height="140" rx="10" fill="#475569" stroke="#5a6d84"/>
+            <text x="100" y="90" text-anchor="middle" fill="#cbd5e1" font-size="11" font-weight="600">ENTRANCE</text>
+            <text x="100" y="108" text-anchor="middle" fill="#94a3b8" font-size="9">& LOCKER ROOMS</text>
+            <!-- Door indicators -->
+            <rect x="80" y="40" width="40" height="6" fill="#64748b"/>
+          </g>
+          
+          <!-- ========== RECEPTION/LIFEGUARD STAND ========== -->
+          <g id="lifeguardStation">
+            <rect x="40" y="200" width="80" height="60" rx="8" fill="#854d0e" stroke="#f59e0b" stroke-width="2"/>
+            <text x="80" y="235" text-anchor="middle" fill="#fef3c7" font-size="9" font-weight="500">LIFEGUARD</text>
+          </g>
+
+          <!-- ========== HOT TUBS ========== -->
+          <g id="hotTubs">
+            <!-- Hot Tub 1 -->
+            <circle cx="100" cy="340" r="45" fill="url(#hotTubGradient)" stroke="#2dd4bf" stroke-width="2" filter="url(#glow)"/>
+            <text x="100" y="345" text-anchor="middle" fill="white" font-size="10" font-weight="600">HOT TUB</text>
+            
+            <!-- Hot Tub 2 -->
+            <circle cx="100" cy="450" r="45" fill="url(#hotTubGradient)" stroke="#2dd4bf" stroke-width="2" filter="url(#glow)"/>
+            <text x="100" y="455" text-anchor="middle" fill="white" font-size="10" font-weight="600">HOT TUB</text>
+          </g>
+          
+          <!-- ========== THERAPY POOL ========== -->
+          <g id="therapyPool" class="pool-area" data-section="therapy">
+            <rect x="40" y="520" width="120" height="130" rx="12" fill="url(#waterGradient)" stroke="#38bdf8" stroke-width="2" filter="url(#glow)"/>
+            <text x="100" y="560" text-anchor="middle" fill="white" font-size="12" font-weight="700">THERAPY</text>
+            <text x="100" y="578" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">POOL</text>
+            <!-- Lanes -->
+            <g id="therapy-lanes">
+              <rect x="48" y="590" width="52" height="50" rx="4" fill="#0ea5e9" class="pool-lane" data-lane="E"/>
+              <rect x="104" y="590" width="52" height="50" rx="4" fill="#0ea5e9" class="pool-lane" data-lane="W"/>
+              <text x="74" y="620" text-anchor="middle" fill="white" font-size="11" font-weight="600">E</text>
+              <text x="130" y="620" text-anchor="middle" fill="white" font-size="11" font-weight="600">W</text>
+            </g>
+          </g>
+
+          <!-- ========== INSTRUCTIONAL POOL ========== -->
+          <g id="instructionalPool" class="pool-area" data-section="instructional">
+            <rect x="180" y="520" width="140" height="130" rx="12" fill="url(#waterGradient)" stroke="#38bdf8" stroke-width="2" filter="url(#glow)"/>
+            <text x="250" y="555" text-anchor="middle" fill="white" font-size="12" font-weight="700">INSTRUCTIONAL</text>
+            <text x="250" y="573" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">POOL</text>
+            <!-- Lanes -->
+            <g id="instructional-lanes">
+              <rect x="190" y="590" width="60" height="50" rx="4" fill="#0ea5e9" class="pool-lane" data-lane="N"/>
+              <rect x="254" y="590" width="60" height="50" rx="4" fill="#0ea5e9" class="pool-lane" data-lane="S"/>
+              <text x="220" y="620" text-anchor="middle" fill="white" font-size="11" font-weight="600">N</text>
+              <text x="284" y="620" text-anchor="middle" fill="white" font-size="11" font-weight="600">S</text>
+            </g>
+          </g>
+
+          <!-- ========== SHALLOW END LAP POOL (6 Lanes) ========== -->
+          <g id="shallowPool" class="pool-area" data-section="shallow">
+            <rect x="180" y="40" width="200" height="460" rx="12" fill="url(#waterGradient)" stroke="#38bdf8" stroke-width="2" filter="url(#glow)"/>
+            <text x="280" y="75" text-anchor="middle" fill="white" font-size="13" font-weight="700">SHALLOW END</text>
+            <text x="280" y="93" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">25 YARDS • 6 LANES</text>
+            
+            <!-- Lane Dividers & Numbers -->
+            <g id="shallow-lanes">
+              <rect x="190" y="105" width="30" height="385" rx="3" fill="#0ea5e9" class="pool-lane" data-lane="1"/>
+              <rect x="222" y="105" width="30" height="385" rx="3" fill="#0ea5e9" class="pool-lane" data-lane="2"/>
+              <rect x="254" y="105" width="30" height="385" rx="3" fill="#0ea5e9" class="pool-lane" data-lane="3"/>
+              <rect x="286" y="105" width="30" height="385" rx="3" fill="#0ea5e9" class="pool-lane" data-lane="4"/>
+              <rect x="318" y="105" width="30" height="385" rx="3" fill="#0ea5e9" class="pool-lane" data-lane="5"/>
+              <rect x="350" y="105" width="25" height="385" rx="3" fill="#0ea5e9" class="pool-lane" data-lane="6"/>
+              
+              <!-- Lane Numbers -->
+              <text x="205" y="130" text-anchor="middle" fill="white" font-size="14" font-weight="700">1</text>
+              <text x="237" y="130" text-anchor="middle" fill="white" font-size="14" font-weight="700">2</text>
+              <text x="269" y="130" text-anchor="middle" fill="white" font-size="14" font-weight="700">3</text>
+              <text x="301" y="130" text-anchor="middle" fill="white" font-size="14" font-weight="700">4</text>
+              <text x="333" y="130" text-anchor="middle" fill="white" font-size="14" font-weight="700">5</text>
+              <text x="362" y="130" text-anchor="middle" fill="white" font-size="14" font-weight="700">6</text>
+            </g>
+          </g>
+
+          <!-- ========== MAIN LAP POOL (10 Lanes) ========== -->
+          <g id="mainPool" class="pool-area" data-section="main">
+            <rect x="400" y="40" width="340" height="460" rx="12" fill="url(#waterGradient)" stroke="#38bdf8" stroke-width="2" filter="url(#glow)"/>
+            <text x="570" y="75" text-anchor="middle" fill="white" font-size="13" font-weight="700">MAIN POOL</text>
+            <text x="570" y="93" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">25 YARDS • 10 LANES</text>
+            
+            <!-- Lane Dividers & Numbers -->
+            <g id="main-lanes">
+              <rect x="410" y="105" width="31" height="385" rx="3" fill="#0ea5e9" class="pool-lane" data-lane="1"/>
+              <rect x="443" y="105" width="31" height="385" rx="3" fill="#0ea5e9" class="pool-lane" data-lane="2"/>
+              <rect x="476" y="105" width="31" height="385" rx="3" fill="#0ea5e9" class="pool-lane" data-lane="3"/>
+              <rect x="509" y="105" width="31" height="385" rx="3" fill="#0ea5e9" class="pool-lane" data-lane="4"/>
+              <rect x="542" y="105" width="31" height="385" rx="3" fill="#0ea5e9" class="pool-lane" data-lane="5"/>
+              <rect x="575" y="105" width="31" height="385" rx="3" fill="#0ea5e9" class="pool-lane" data-lane="6"/>
+              <rect x="608" y="105" width="31" height="385" rx="3" fill="#0ea5e9" class="pool-lane" data-lane="7"/>
+              <rect x="641" y="105" width="31" height="385" rx="3" fill="#0ea5e9" class="pool-lane" data-lane="8"/>
+              <rect x="674" y="105" width="31" height="385" rx="3" fill="#0ea5e9" class="pool-lane" data-lane="9"/>
+              <rect x="707" y="105" width="26" height="385" rx="3" fill="#0ea5e9" class="pool-lane" data-lane="10"/>
+              
+              <!-- Lane Numbers -->
+              <text x="425" y="130" text-anchor="middle" fill="white" font-size="13" font-weight="700">1</text>
+              <text x="458" y="130" text-anchor="middle" fill="white" font-size="13" font-weight="700">2</text>
+              <text x="491" y="130" text-anchor="middle" fill="white" font-size="13" font-weight="700">3</text>
+              <text x="524" y="130" text-anchor="middle" fill="white" font-size="13" font-weight="700">4</text>
+              <text x="557" y="130" text-anchor="middle" fill="white" font-size="13" font-weight="700">5</text>
+              <text x="590" y="130" text-anchor="middle" fill="white" font-size="13" font-weight="700">6</text>
+              <text x="623" y="130" text-anchor="middle" fill="white" font-size="13" font-weight="700">7</text>
+              <text x="656" y="130" text-anchor="middle" fill="white" font-size="13" font-weight="700">8</text>
+              <text x="689" y="130" text-anchor="middle" fill="white" font-size="13" font-weight="700">9</text>
+              <text x="720" y="130" text-anchor="middle" fill="white" font-size="12" font-weight="700">10</text>
+            </g>
+          </g>
+
+          <!-- ========== DEEP POOL (3 Lanes + Diving) ========== -->
+          <g id="deepPool" class="pool-area" data-section="deep">
+            <rect x="760" y="40" width="180" height="300" rx="12" fill="url(#waterGradient)" stroke="#38bdf8" stroke-width="2" filter="url(#glow)"/>
+            <text x="850" y="75" text-anchor="middle" fill="white" font-size="13" font-weight="700">DEEP POOL</text>
+            <text x="850" y="93" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">3 LANES</text>
+            
+            <!-- Lane Dividers & Numbers -->
+            <g id="deep-lanes">
+              <rect x="772" y="105" width="52" height="225" rx="3" fill="#0ea5e9" class="pool-lane" data-lane="1"/>
+              <rect x="828" y="105" width="52" height="225" rx="3" fill="#0ea5e9" class="pool-lane" data-lane="2"/>
+              <rect x="884" y="105" width="48" height="225" rx="3" fill="#0ea5e9" class="pool-lane" data-lane="3"/>
+              
+              <text x="798" y="130" text-anchor="middle" fill="white" font-size="14" font-weight="700">1</text>
+              <text x="854" y="130" text-anchor="middle" fill="white" font-size="14" font-weight="700">2</text>
+              <text x="908" y="130" text-anchor="middle" fill="white" font-size="14" font-weight="700">3</text>
+            </g>
+          </g>
+
+          <!-- ========== DEEP WELL SOUTH (Diving) ========== -->
+          <g id="deepWellSouth" class="pool-area" data-section="deep_south">
+            <rect x="760" y="360" width="180" height="140" rx="12" fill="#0369a1" stroke="#38bdf8" stroke-width="2" filter="url(#glow)"/>
+            <text x="850" y="410" text-anchor="middle" fill="white" font-size="12" font-weight="700">DEEP WELL</text>
+            <text x="850" y="428" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="10">SOUTH</text>
+            <!-- Diving Platform Icon -->
+            <rect x="820" y="455" width="60" height="8" rx="2" fill="#7dd3fc"/>
+            <rect x="845" y="445" width="10" height="18" fill="#7dd3fc"/>
+            <g id="deep_south-lanes">
+              <rect x="768" y="365" width="164" height="130" rx="8" fill="#0369a1" fill-opacity="0" class="pool-lane" data-lane="South"/>
+            </g>
+          </g>
+
+          <!-- ========== DEEP WELL NORTH ========== -->
+          <g id="deepWellNorth" class="pool-area" data-section="deep_north">
+            <rect x="760" y="520" width="180" height="130" rx="12" fill="#0369a1" stroke="#38bdf8" stroke-width="2" filter="url(#glow)"/>
+            <text x="850" y="570" text-anchor="middle" fill="white" font-size="12" font-weight="700">DEEP WELL</text>
+            <text x="850" y="588" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="10">NORTH</text>
+            <!-- Kayak Icon -->
+            <ellipse cx="850" cy="620" rx="30" ry="8" fill="#7dd3fc"/>
+            <g id="deep_north-lanes">
+              <rect x="768" y="525" width="164" height="120" rx="8" fill="#0369a1" fill-opacity="0" class="pool-lane" data-lane="North"/>
+            </g>
+          </g>
+
+          <!-- ========== BLEACHERS / SPECTATOR AREA ========== -->
+          <g id="spectatorArea">
+            <rect x="960" y="40" width="200" height="300" rx="10" fill="#475569" stroke="#5a6d84"/>
+            <text x="1060" y="100" text-anchor="middle" fill="#cbd5e1" font-size="12" font-weight="600">SPECTATOR</text>
+            <text x="1060" y="118" text-anchor="middle" fill="#cbd5e1" font-size="12" font-weight="600">SEATING</text>
+            <!-- Bleacher rows -->
+            <g fill="#5a6d84">
+              <rect x="980" y="140" width="160" height="12" rx="2"/>
+              <rect x="980" y="160" width="160" height="12" rx="2"/>
+              <rect x="980" y="180" width="160" height="12" rx="2"/>
+              <rect x="980" y="200" width="160" height="12" rx="2"/>
+              <rect x="980" y="220" width="160" height="12" rx="2"/>
+              <rect x="980" y="240" width="160" height="12" rx="2"/>
+              <rect x="980" y="260" width="160" height="12" rx="2"/>
+              <rect x="980" y="280" width="160" height="12" rx="2"/>
+              <rect x="980" y="300" width="160" height="12" rx="2"/>
+            </g>
+          </g>
+
+          <!-- ========== EQUIPMENT STORAGE ========== -->
+          <g id="equipment">
+            <rect x="960" y="360" width="200" height="100" rx="10" fill="#475569" stroke="#5a6d84"/>
+            <text x="1060" y="420" text-anchor="middle" fill="#94a3b8" font-size="11" font-weight="500">EQUIPMENT STORAGE</text>
+          </g>
+
+          <!-- ========== STAFF / OFFICES ========== -->
+          <g id="offices">
+            <rect x="960" y="480" width="200" height="170" rx="10" fill="#475569" stroke="#5a6d84"/>
+            <text x="1060" y="565" text-anchor="middle" fill="#94a3b8" font-size="11" font-weight="500">STAFF OFFICES</text>
+          </g>
+
+          <!-- ========== WALKING PATH INDICATORS ========== -->
+          <g id="walkingPaths" stroke="#5a6d84" stroke-width="1" stroke-dasharray="5,5" fill="none">
+            <path d="M 165 300 L 165 510"/>
+            <path d="M 385 300 L 385 510"/>
+            <path d="M 745 250 L 745 510"/>
+            <path d="M 340 510 L 745 510"/>
+          </g>
+
+        </svg>
+      </div>
+    </section>
+
+    <!-- Legend -->
+    <section class="legend-panel">
+      <h3 class="legend-panel__title">ACTIVITY LEGEND</h3>
+      <div class="legend-grid" id="legendGrid"></div>
+    </section>
+  </main>
+
+  <!-- Modal for Lane Details -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" role="dialog">
+      <div class="modal__header">
+        <h3 class="modal__title" id="modalTitle">Lane Details</h3>
+        <button class="modal__close" id="modalClose">&times;</button>
+      </div>
+      <div class="modal__content" id="modalContent"></div>
+    </div>
+  </div>
+
+  <script src="js/schedule.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
