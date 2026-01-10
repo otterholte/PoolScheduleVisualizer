@@ -1180,6 +1180,95 @@ body::before {
 }
 
 /* ==========================================
+   Lane Tooltip
+   ========================================== */
+.lane-tooltip {
+  position: fixed;
+  z-index: 2000;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.lane-tooltip--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.lane-tooltip__content {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  box-shadow: var(--shadow-lg);
+  max-width: 280px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.lane-tooltip__current {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.lane-tooltip__activity {
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lane-tooltip__activity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.lane-tooltip__time {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  margin-top: 2px;
+}
+
+.lane-tooltip__other-times {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.lane-tooltip__other-times strong {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.lane-tooltip__match {
+  margin-top: 4px;
+  padding-left: 12px;
+}
+
+.lane-tooltip__match-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.lane-tooltip__match-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.lane-tooltip__no-match {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ==========================================
    Responsive
    ========================================== */
 @media (max-width: 1024px) {

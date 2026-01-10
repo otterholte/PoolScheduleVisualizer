@@ -31,6 +31,8 @@ class PoolScheduleApp {
       modalTitle: document.getElementById('modalTitle'),
       modalContent: document.getElementById('modalContent'),
       modalClose: document.getElementById('modalClose'),
+      laneTooltip: document.getElementById('laneTooltip'),
+      laneTooltipContent: document.getElementById('laneTooltipContent'),
       // Date navigation elements
       prevDay: document.getElementById('prevDay'),
       nextDay: document.getElementById('nextDay'),
@@ -310,7 +312,7 @@ class PoolScheduleApp {
       if (e.key === 'Escape') this.closeModal();
     });
     
-    // Pool lane clicks
+    // Pool lane clicks and hover
     this.elements.floorplan.querySelectorAll('.pool-lane').forEach(lane => {
       lane.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -321,6 +323,11 @@ class PoolScheduleApp {
           this.showLaneDetails(section, laneId);
         }
       });
+      
+      // Tooltip on hover
+      lane.addEventListener('mouseenter', (e) => this.showLaneTooltip(e, lane));
+      lane.addEventListener('mousemove', (e) => this.positionTooltip(e));
+      lane.addEventListener('mouseleave', () => this.hideLaneTooltip());
     });
     
     // Date navigation - prev/next day
@@ -646,6 +653,132 @@ class PoolScheduleApp {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+
+  // Tooltip methods
+  showLaneTooltip(e, lane) {
+    const section = lane.closest('[data-section]')?.dataset.section || 
+                   lane.closest('g[id$="-lanes"]')?.id.replace('-lanes', '');
+    const laneId = this.parseLaneId(lane.dataset.lane);
+    
+    // Get current status
+    const status = this.schedule.getLaneStatus(this.selectedDate, section, laneId, this.selectedTimeMinutes);
+    
+    // Get all activities for this lane today
+    const laneSchedule = this.schedule.getLaneSchedule(this.selectedDate, section, laneId);
+    
+    // Build tooltip content
+    let html = '';
+    
+    if (this.activeFilters.length === 0) {
+      // No filter - just show current activity
+      if (status && status.activity) {
+        html = `
+          <div class="lane-tooltip__current">
+            <div class="lane-tooltip__activity">
+              <span class="lane-tooltip__activity-dot" style="background: ${status.activity.color}"></span>
+              ${status.activity.name}
+            </div>
+            <div class="lane-tooltip__time">${status.entry.start} - ${status.entry.end}</div>
+          </div>
+        `;
+      } else {
+        html = `<div class="lane-tooltip__no-match">No activity scheduled</div>`;
+      }
+    } else {
+      // Filter active - show current (if matching) + other matching times
+      const selectedActivityIds = this.getSelectedActivityIds();
+      
+      // Current activity
+      if (status && status.activity) {
+        const isMatch = selectedActivityIds.includes(status.activity.id);
+        if (isMatch) {
+          html = `
+            <div class="lane-tooltip__current">
+              <div class="lane-tooltip__activity">
+                <span class="lane-tooltip__activity-dot" style="background: ${status.activity.color}"></span>
+                ${status.activity.name}
+              </div>
+              <div class="lane-tooltip__time">${status.entry.start} - ${status.entry.end}</div>
+            </div>
+          `;
+        } else {
+          html = `
+            <div class="lane-tooltip__current">
+              <div class="lane-tooltip__no-match">Current: ${status.activity.name} (not selected)</div>
+            </div>
+          `;
+        }
+      } else {
+        html = `
+          <div class="lane-tooltip__current">
+            <div class="lane-tooltip__no-match">No activity at current time</div>
+          </div>
+        `;
+      }
+      
+      // Find other matching times today
+      const matchingSlots = laneSchedule.filter(slot => 
+        selectedActivityIds.includes(slot.activity?.id) && 
+        !(status && slot.start === status.entry?.start && slot.end === status.entry?.end)
+      );
+      
+      if (matchingSlots.length > 0) {
+        html += `<div class="lane-tooltip__other-times"><strong>Other times today:</strong>`;
+        html += `<div class="lane-tooltip__match">`;
+        matchingSlots.forEach(slot => {
+          html += `
+            <div class="lane-tooltip__match-item">
+              <span class="lane-tooltip__match-dot" style="background: ${slot.activity?.color || '#666'}"></span>
+              ${slot.start} - ${slot.end}
+            </div>
+          `;
+        });
+        html += `</div></div>`;
+      } else if (!status || !selectedActivityIds.includes(status.activity?.id)) {
+        html += `<div class="lane-tooltip__no-match">No selected activities in this lane today</div>`;
+      }
+    }
+    
+    this.elements.laneTooltipContent.innerHTML = html;
+    this.elements.laneTooltip.classList.add('lane-tooltip--visible');
+    this.positionTooltip(e);
+  }
+  
+  positionTooltip(e) {
+    const tooltip = this.elements.laneTooltip;
+    const padding = 12;
+    
+    let x = e.clientX + padding;
+    let y = e.clientY + padding;
+    
+    // Keep tooltip on screen
+    const rect = tooltip.getBoundingClientRect();
+    if (x + rect.width > window.innerWidth) {
+      x = e.clientX - rect.width - padding;
+    }
+    if (y + rect.height > window.innerHeight) {
+      y = e.clientY - rect.height - padding;
+    }
+    
+    tooltip.style.left = `${x}px`;
+    tooltip.style.top = `${y}px`;
+  }
+  
+  hideLaneTooltip() {
+    this.elements.laneTooltip.classList.remove('lane-tooltip--visible');
+  }
+  
+  getSelectedActivityIds() {
+    const ids = [];
+    this.activeFilters.forEach(filter => {
+      if (filter.type === 'activity') {
+        ids.push(filter.id);
+      } else if (filter.type === 'category' && filter.activityIds) {
+        ids.push(...filter.activityIds);
+      }
+    });
+    return ids;
   }
 
   parseLaneId(lane) {
