@@ -316,6 +316,7 @@ class PoolScheduleApp {
     this.elements.floorplan.querySelectorAll('.pool-lane').forEach(lane => {
       lane.addEventListener('click', (e) => {
         e.stopPropagation();
+        this.hideLaneTooltip(); // Hide tooltip on click
         const section = lane.closest('[data-section]')?.dataset.section || 
                        lane.closest('g[id$="-lanes"]')?.id.replace('-lanes', '');
         const laneId = lane.dataset.lane;
@@ -739,6 +740,9 @@ class PoolScheduleApp {
         html += `<div class="lane-tooltip__no-match">No selected activities in this lane today</div>`;
       }
     }
+    
+    // Add click hint
+    html += `<div class="lane-tooltip__hint">Click for full schedule</div>`;
     
     this.elements.laneTooltipContent.innerHTML = html;
     this.elements.laneTooltip.classList.add('lane-tooltip--visible');
