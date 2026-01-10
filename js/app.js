@@ -157,6 +157,8 @@ class PoolScheduleApp {
   toggleLegend() {
     this.elements.legendSidebar.classList.toggle('legend-sidebar--hidden');
     this.elements.legendToggle.classList.toggle('legend-toggle--collapsed');
+    // Expand floorplan to full height when legend is hidden
+    document.querySelector('.floorplan-section').classList.toggle('floorplan-section--expanded');
   }
 
   toggleActivityFilter(activityId) {

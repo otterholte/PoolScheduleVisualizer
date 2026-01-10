@@ -272,6 +272,10 @@ body::before {
   height: calc(100vh - 72px);
 }
 
+.floorplan-section--expanded {
+  height: 100vh;
+}
+
 /* ==========================================
    Day Selector
    ========================================== */
