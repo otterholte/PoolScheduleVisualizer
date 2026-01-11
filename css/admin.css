@@ -1046,7 +1046,7 @@
   box-shadow: var(--shadow-xl);
   max-width: 520px;
   width: 90%;
-  max-height: 65vh;
+  max-height: 75vh;
   overflow-y: auto;
   animation: slideUp 0.3s ease-out;
 }
