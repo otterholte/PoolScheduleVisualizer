@@ -120,8 +120,8 @@ class PoolScheduleApp {
           this.clearAllFilters();
         }
       } else {
-        // Check if first visit - default to Open Swim
-        this.applyDefaultFilter();
+      // Check if first visit - default to Open Swim
+      this.applyDefaultFilter();
       }
       
       this.updateDisplay();
@@ -302,10 +302,10 @@ class PoolScheduleApp {
           const hours = this.schedule.getPoolHours(this.selectedDate);
           if (hours) {
             if (currentTimeMinutes >= hours.open && currentTimeMinutes <= hours.close) {
-              this.selectedTimeMinutes = currentTimeMinutes;
-              this.updateTimeSlider();
-              this.updateDisplay();
-            }
+          this.selectedTimeMinutes = currentTimeMinutes;
+          this.updateTimeSlider();
+          this.updateDisplay();
+        }
           }
         }
         
@@ -665,6 +665,21 @@ class PoolScheduleApp {
   }
   
   /**
+   * Get emoji for a category
+   */
+  getCategoryEmoji(categoryId) {
+    const emojiMap = {
+      'open': '🏊',
+      'clubs': '🏆',
+      'classes': '📚',
+      'specialty': '🎯',
+      'therapy': '💆',
+      'private': '🔒'
+    };
+    return emojiMap[categoryId] || '📋';
+  }
+  
+  /**
    * Render the segmented tabs for category selection
    */
   renderSegmentTabs() {
@@ -686,13 +701,16 @@ class PoolScheduleApp {
       return catActivities.length > 0;
     });
     
-    // Create tabs
+    // Create tabs with emojis
     validCategories.forEach((cat, index) => {
       const tab = document.createElement('button');
       tab.className = 'segment-tab';
       tab.type = 'button';
       tab.dataset.categoryId = cat.id;
-      tab.textContent = cat.name;
+      tab.innerHTML = `
+        <span class="segment-tab__emoji">${this.getCategoryEmoji(cat.id)}</span>
+        <span class="segment-tab__text">${cat.name}</span>
+      `;
       
       tab.addEventListener('click', () => this.selectCategoryTab(cat.id));
       
@@ -736,10 +754,16 @@ class PoolScheduleApp {
     
     container.innerHTML = '';
     
-    const grid = document.createElement('div');
-    grid.className = 'segment-content__grid';
+    const list = document.createElement('div');
+    list.className = 'segment-content__list';
     
     activities.forEach(activity => {
+      // Wrapper for activity + inline results
+      const wrapper = document.createElement('div');
+      wrapper.className = 'activity-wrapper';
+      wrapper.dataset.activityId = activity.id;
+      
+      // Activity button
       const item = document.createElement('button');
       item.className = 'activity-item';
       item.type = 'button';
@@ -748,15 +772,129 @@ class PoolScheduleApp {
         <div class="activity-item__info">
           <span class="activity-item__name">${activity.name}</span>
         </div>
-        <svg class="activity-item__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="9 18 15 12 9 6"></polyline>
+        <svg class="activity-item__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
       `;
-      item.addEventListener('click', () => this.selectListActivity(activity.id));
-      grid.appendChild(item);
+      item.addEventListener('click', () => this.toggleInlineResults(activity.id, wrapper));
+      wrapper.appendChild(item);
+      
+      // Inline results container (hidden initially)
+      const inlineResults = document.createElement('div');
+      inlineResults.className = 'activity-inline-results';
+      inlineResults.id = `inline-results-${activity.id}`;
+      wrapper.appendChild(inlineResults);
+      
+      list.appendChild(wrapper);
     });
     
-    container.appendChild(grid);
+    container.appendChild(list);
+  }
+  
+  /**
+   * Toggle inline results for an activity
+   */
+  toggleInlineResults(activityId, wrapper) {
+    const resultsContainer = wrapper.querySelector('.activity-inline-results');
+    const activityItem = wrapper.querySelector('.activity-item');
+    const isExpanded = wrapper.classList.contains('activity-wrapper--expanded');
+    
+    // Collapse all other expanded items
+    document.querySelectorAll('.activity-wrapper--expanded').forEach(w => {
+      if (w !== wrapper) {
+        w.classList.remove('activity-wrapper--expanded');
+        const otherResults = w.querySelector('.activity-inline-results');
+        if (otherResults) otherResults.innerHTML = '';
+      }
+    });
+    
+    if (isExpanded) {
+      // Collapse this one
+      wrapper.classList.remove('activity-wrapper--expanded');
+      resultsContainer.innerHTML = '';
+    } else {
+      // Expand this one
+      wrapper.classList.add('activity-wrapper--expanded');
+      this.renderInlineResults(activityId, resultsContainer);
+    }
+  }
+  
+  /**
+   * Render inline results for an activity
+   */
+  renderInlineResults(activityId, container) {
+    const activity = this.schedule.getActivity(activityId);
+    if (!activity) return;
+    
+    this.selectedListActivity = activity;
+    this.daysToShow = 7;
+    
+    // Get upcoming slots
+    const allSlots = this.collectUpcomingSlots(activityId, this.daysToShow);
+    
+    // Build inline HTML
+    let html = `
+      <div class="inline-results__separator"></div>
+      <div class="inline-results__content">
+    `;
+    
+    if (allSlots.length === 0) {
+      html += `<p class="inline-results__empty">No upcoming sessions in the next ${this.daysToShow} days</p>`;
+    } else {
+      // Group by date
+      const byDate = {};
+      allSlots.forEach(slot => {
+        if (!byDate[slot.date]) byDate[slot.date] = { slots: [] };
+        byDate[slot.date].slots.push(slot);
+      });
+      
+      // Render each day
+      Object.keys(byDate).forEach(dateStr => {
+        const dayData = byDate[dateStr];
+        const dateObj = new Date(dateStr + 'T12:00:00');
+        const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+        const dateDisplay = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const today = this.formatDate(new Date());
+        const tomorrow = this.formatDate(new Date(Date.now() + 86400000));
+        
+        let badge = '';
+        if (dateStr === today) badge = '<span class="inline-day__badge">Today</span>';
+        else if (dateStr === tomorrow) badge = '<span class="inline-day__badge inline-day__badge--tomorrow">Tomorrow</span>';
+        
+        html += `
+          <div class="inline-day">
+            <div class="inline-day__header">
+              <span class="inline-day__name">${dayName}</span>
+              <span class="inline-day__date">${dateDisplay}</span>
+              ${badge}
+            </div>
+            <div class="inline-day__slots">
+        `;
+        
+        // Render slots
+        dayData.slots.forEach(slot => {
+          const shortName = (slot.section?.name || slot.slot.section)
+            .replace(' Pool', '')
+            .replace(' (25 YARDS)', '')
+            .replace('DEEP WELL ', 'DW ');
+          
+          html += `
+            <div class="inline-slot">
+              <span class="inline-slot__time">${this.formatTimeAMPM(slot.slot.start)} - ${this.formatTimeAMPM(slot.slot.end)}</span>
+              <span class="inline-slot__location">${shortName}</span>
+            </div>
+          `;
+        });
+        
+        html += `
+            </div>
+          </div>
+        `;
+      });
+    }
+    
+    html += '</div>';
+    container.innerHTML = html;
   }
   
   /**
@@ -1772,7 +1910,7 @@ class PoolScheduleApp {
       if (isViewingToday) {
         if (currentRealTimeMinutes >= hours.close) {
           // After closing (until midnight) - slider at right (close time)
-          this.selectedTimeMinutes = hours.close;
+      this.selectedTimeMinutes = hours.close;
         } else if (currentRealTimeMinutes < hours.open) {
           // Before opening (after midnight) - slider at left (open time)
           this.selectedTimeMinutes = hours.open;
