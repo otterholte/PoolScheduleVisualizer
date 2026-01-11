@@ -2272,14 +2272,14 @@ body::before {
   display: grid;
   grid-template-columns: 140px 1fr;
   gap: 12px;
-  padding: 8px 12px;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-subtle);
+  padding: 10px 12px;
+  background: rgba(6, 182, 212, 0.08);
+  border-bottom: 1px solid rgba(6, 182, 212, 0.15);
   font-size: 0.65rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--text-muted);
+  color: var(--accent-cyan);
 }
 
 .pool-row {
@@ -2296,7 +2296,111 @@ body::before {
 }
 
 .pool-row:hover {
+  background: rgba(6, 182, 212, 0.06);
+}
+
+.pool-row--hidden {
+  display: none;
+}
+
+/* Pool Filter */
+.pool-filter {
+  margin-bottom: 20px;
+}
+
+.pool-filter__search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
   background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  transition: border-color var(--transition-fast);
+}
+
+.pool-filter__search:focus-within {
+  border-color: var(--accent-cyan);
+}
+
+.pool-filter__icon {
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.pool-filter__input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  outline: none;
+}
+
+.pool-filter__input::placeholder {
+  color: var(--text-muted);
+}
+
+.pool-filter__clear {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: all var(--transition-fast);
+}
+
+.pool-filter__clear:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.pool-filter__clear svg {
+  width: 14px;
+  height: 14px;
+}
+
+.pool-filter--active .pool-filter__clear {
+  display: flex;
+}
+
+.pool-filter__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.pool-filter__chip {
+  padding: 5px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.pool-filter__chip:hover {
+  border-color: var(--border-light);
+  color: var(--text-primary);
+}
+
+.pool-filter__chip--active {
+  background: rgba(6, 182, 212, 0.15);
+  border-color: rgba(6, 182, 212, 0.3);
+  color: var(--accent-cyan);
 }
 
 .pool-row__name {

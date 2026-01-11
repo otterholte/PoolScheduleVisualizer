@@ -64,11 +64,18 @@ class PoolScheduleApp {
       weekGrid: document.getElementById('weekGrid'),
       weekGridHeader: document.getElementById('weekGridHeader'),
       weekGridBody: document.getElementById('weekGridBody'),
-      showMoreDays: document.getElementById('showMoreDays')
+      showMoreDays: document.getElementById('showMoreDays'),
+      poolFilter: document.getElementById('poolFilter'),
+      poolFilterInput: document.getElementById('poolFilterInput'),
+      poolFilterClear: document.getElementById('poolFilterClear'),
+      poolFilterChips: document.getElementById('poolFilterChips')
     };
     
     // Currently selected activity for list view
     this.selectedListActivity = null;
+    
+    // Pool filter state
+    this.poolFilterText = '';
     
     // Currently selected category tab (first one by default)
     this.selectedCategoryTab = null;
@@ -779,6 +786,15 @@ class PoolScheduleApp {
     const today = new Date();
     const currentTimeMinutes = this.getCurrentTimeMinutes();
     
+    // Reset pool filter
+    this.poolFilterText = '';
+    if (this.elements.poolFilterInput) {
+      this.elements.poolFilterInput.value = '';
+    }
+    if (this.elements.poolFilter) {
+      this.elements.poolFilter.classList.remove('pool-filter--active');
+    }
+    
     // Collect all upcoming slots
     const allSlots = this.collectUpcomingSlots(activityId, 14); // Get 14 days worth
     
@@ -793,6 +809,107 @@ class PoolScheduleApp {
     
     // Setup show more button
     this.setupShowMoreButton(allSlots);
+    
+    // Setup pool filter
+    this.setupPoolFilter(allSlots);
+  }
+  
+  /**
+   * Setup pool filter functionality
+   */
+  setupPoolFilter(allSlots) {
+    const input = this.elements.poolFilterInput;
+    const clearBtn = this.elements.poolFilterClear;
+    const chipsContainer = this.elements.poolFilterChips;
+    const filterContainer = this.elements.poolFilter;
+    
+    if (!input || !chipsContainer) return;
+    
+    // Get unique pool names from all slots
+    const poolNames = new Set();
+    allSlots.forEach(slot => {
+      const sectionName = slot.section?.name || slot.slot.section;
+      const shortName = sectionName
+        .replace(' Pool', '')
+        .replace(' (25 YARDS)', '')
+        .replace('DEEP WELL ', 'DW ');
+      poolNames.add(shortName);
+    });
+    
+    // Render quick filter chips
+    chipsContainer.innerHTML = '';
+    const commonPools = ['Shallow', 'Main', 'Deep', 'Therapy', 'Instructional'];
+    const availablePools = commonPools.filter(p => 
+      [...poolNames].some(name => name.toLowerCase().includes(p.toLowerCase()))
+    );
+    
+    availablePools.forEach(pool => {
+      const chip = document.createElement('button');
+      chip.className = 'pool-filter__chip';
+      chip.type = 'button';
+      chip.textContent = pool;
+      chip.addEventListener('click', () => {
+        const isActive = chip.classList.contains('pool-filter__chip--active');
+        // Clear all active chips
+        chipsContainer.querySelectorAll('.pool-filter__chip').forEach(c => 
+          c.classList.remove('pool-filter__chip--active')
+        );
+        
+        if (isActive) {
+          // Deselect - clear filter
+          input.value = '';
+          this.applyPoolFilter('');
+        } else {
+          // Select this chip
+          chip.classList.add('pool-filter__chip--active');
+          input.value = pool;
+          this.applyPoolFilter(pool);
+        }
+      });
+      chipsContainer.appendChild(chip);
+    });
+    
+    // Input event listener
+    input.addEventListener('input', (e) => {
+      const value = e.target.value;
+      this.applyPoolFilter(value);
+      
+      // Clear chip selection when typing
+      chipsContainer.querySelectorAll('.pool-filter__chip').forEach(c => 
+        c.classList.remove('pool-filter__chip--active')
+      );
+    });
+    
+    // Clear button
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        input.value = '';
+        this.applyPoolFilter('');
+        chipsContainer.querySelectorAll('.pool-filter__chip').forEach(c => 
+          c.classList.remove('pool-filter__chip--active')
+        );
+      });
+    }
+  }
+  
+  /**
+   * Apply pool filter to all pool rows
+   */
+  applyPoolFilter(filterText) {
+    this.poolFilterText = filterText.toLowerCase().trim();
+    const filterContainer = this.elements.poolFilter;
+    
+    // Toggle active state for clear button visibility
+    if (filterContainer) {
+      filterContainer.classList.toggle('pool-filter--active', this.poolFilterText.length > 0);
+    }
+    
+    // Filter all pool rows
+    document.querySelectorAll('.pool-row').forEach(row => {
+      const poolName = row.querySelector('.pool-row__name')?.textContent?.toLowerCase() || '';
+      const matches = this.poolFilterText === '' || poolName.includes(this.poolFilterText);
+      row.classList.toggle('pool-row--hidden', !matches);
+    });
   }
   
   /**
