@@ -1227,7 +1227,31 @@ body::before {
 
 /* Past activities - subtle fade */
 .schedule-item--past {
-  opacity: 0.6;
+  opacity: 0.5;
+}
+
+/* Separator between past and current/future */
+.schedule-separator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.schedule-separator::before,
+.schedule-separator::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-subtle);
+}
+
+.schedule-separator span {
+  padding: 0 4px;
 }
 
 /* Dimmed when filters active but not matching (future only) */

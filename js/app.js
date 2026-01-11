@@ -632,7 +632,10 @@ class PoolScheduleApp {
       const selectedActivityIds = this.getSelectedActivityIds();
       const hasFilters = selectedActivityIds.length > 0;
       
-      this.elements.modalContent.innerHTML = laneSchedule.map(entry => {
+      // Track if we need to add separator
+      let addedSeparator = false;
+      
+      this.elements.modalContent.innerHTML = laneSchedule.map((entry, index) => {
         const startMinutes = this.schedule.timeToMinutes(entry.start);
         const endMinutes = this.schedule.timeToMinutes(entry.end);
         
@@ -645,9 +648,10 @@ class PoolScheduleApp {
         const isFuture = !isViewingToday || startMinutes > actualCurrentTime;
         const isCurrent = isAtScrubber;
         
-        // Check if this matches selected filters (only highlight future matches)
+        // Check if this matches selected filters
         const matchesFilter = selectedActivityIds.includes(entry.activity?.id);
-        const showMatch = hasFilters && matchesFilter && (isFuture || isCurrent);
+        // Show match for current or future activities that match
+        const showMatch = hasFilters && matchesFilter && !isPast;
         
         // Build CSS classes
         let itemClass = 'schedule-item';
@@ -655,14 +659,29 @@ class PoolScheduleApp {
         if (showMatch && !isCurrent) itemClass += ' schedule-item--selected';
         if (isPast) itemClass += ' schedule-item--past';
         // Only dim future non-matches when filters are active
-        if (hasFilters && !matchesFilter && isFuture) itemClass += ' schedule-item--dimmed';
+        if (hasFilters && !matchesFilter && !isPast) itemClass += ' schedule-item--dimmed';
         
-        // Build badges
+        // Build badges - show both NOW and MATCH if applicable
         let badges = '';
         if (isCurrent) badges += '<span class="schedule-item__badge schedule-item__badge--now">NOW</span>';
-        if (showMatch && !isCurrent) badges += '<span class="schedule-item__badge schedule-item__badge--match">MATCH</span>';
+        if (showMatch) badges += '<span class="schedule-item__badge schedule-item__badge--match">MATCH</span>';
+        
+        // Add separator before first non-past item when viewing today
+        let separator = '';
+        if (isViewingToday && !addedSeparator && !isPast) {
+          // Check if there were any past items
+          const hasPastItems = laneSchedule.some(e => {
+            const end = this.schedule.timeToMinutes(e.end);
+            return end <= actualCurrentTime;
+          });
+          if (hasPastItems) {
+            separator = '<div class="schedule-separator"><span>Earlier Today</span></div>';
+          }
+          addedSeparator = true;
+        }
         
         return `
+          ${separator}
           <div class="${itemClass}">
             <div class="schedule-item__color" style="background: ${entry.activity.color}"></div>
             <span class="schedule-item__time">
