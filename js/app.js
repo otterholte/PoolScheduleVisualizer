@@ -795,6 +795,9 @@ class PoolScheduleApp {
   }
 
   updateLaneVisual(laneEl, status) {
+    // Use consistent grey for all inactive/closed/non-matching states
+    const INACTIVE_GREY = '#434c5c';
+    
     // Reset styles
     laneEl.style.opacity = '1';
     laneEl.style.filter = '';
@@ -802,8 +805,7 @@ class PoolScheduleApp {
     
     if (!status) {
       // No activity - closed/unavailable
-      // Use solid gray at full opacity to fully cover any background
-      laneEl.setAttribute('fill', '#374151');
+      laneEl.setAttribute('fill', INACTIVE_GREY);
       return;
     }
     
@@ -816,9 +818,8 @@ class PoolScheduleApp {
         laneEl.setAttribute('fill', activity.color);
         laneEl.style.filter = 'brightness(1.05) drop-shadow(0 0 4px ' + activity.color + ')';
       } else {
-        // Non-matching activity - use solid muted gray (NOT opacity)
-        // This ensures no background color bleeds through
-        laneEl.setAttribute('fill', '#3f4a5a');
+        // Non-matching activity - same grey as closed/unavailable
+        laneEl.setAttribute('fill', INACTIVE_GREY);
       }
     } else {
       // No filter active - show normal activity color
@@ -837,7 +838,7 @@ class PoolScheduleApp {
     const viewingDate = new Date(this.selectedDate + 'T12:00:00');
     const dateOptions = { weekday: 'long', month: 'long', day: 'numeric' };
     const formattedDate = viewingDate.toLocaleDateString('en-US', dateOptions);
-    const formattedTime = this.formatTimeAMPM(this.schedule.minutesToTimeString(this.selectedTimeMinutes));
+    const formattedTime = this.schedule.minutesToTimeString(this.selectedTimeMinutes);
     this.elements.modalSubtitle.textContent = `Viewing: ${formattedDate} at ${formattedTime}`;
     
     if (laneSchedule.length === 0) {

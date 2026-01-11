@@ -28,7 +28,7 @@
   ],
   "activities": [
     { "id": "open_lap", "name": "Open Lap Swimming", "color": "#22c55e", "shortName": "Open", "category": "open" },
-    { "id": "closed", "name": "Closed", "color": "#6b7280", "shortName": "Closed", "category": "open" },
+    { "id": "closed", "name": "Closed", "color": "#434c5c", "shortName": "Closed", "category": "open" },
     { "id": "masters", "name": "Masters Swim Club", "color": "#3b82f6", "shortName": "Masters", "category": "clubs" },
     { "id": "swim_team", "name": "Competitive Swim Team", "color": "#1d4ed8", "shortName": "Team", "category": "clubs" },
     { "id": "diving", "name": "Diving Practice", "color": "#0ea5e9", "shortName": "Diving", "category": "clubs" },
