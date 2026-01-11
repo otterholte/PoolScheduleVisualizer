@@ -73,6 +73,9 @@ class PoolScheduleApp {
     // Pool filter state (set of selected pool names)
     this.selectedPools = new Set();
     
+    // Store slot data by date for filter recalculation
+    this.slotsByDate = {};
+    
     // Currently selected category tab (first one by default)
     this.selectedCategoryTab = null;
     
@@ -891,13 +894,54 @@ class PoolScheduleApp {
   }
   
   /**
-   * Apply pool filter to all pool rows
+   * Apply pool filter to table rows and recalculate availability windows
    */
   applyPoolFilter() {
+    // Filter table rows
     document.querySelectorAll('.pool-row').forEach(row => {
       const poolName = row.dataset.pool || '';
       const matches = this.selectedPools.size === 0 || this.selectedPools.has(poolName);
       row.classList.toggle('pool-row--hidden', !matches);
+    });
+    
+    // Recalculate availability windows for each day
+    document.querySelectorAll('.sessions-collapsible').forEach(container => {
+      const dateStr = container.dataset.date;
+      const windowsContainer = container.querySelector('.availability-windows');
+      
+      if (!dateStr || !windowsContainer || !this.slotsByDate[dateStr]) return;
+      
+      // Get slots for this day
+      const allSlots = this.slotsByDate[dateStr];
+      
+      // Filter slots based on selected pools
+      const filteredSlots = this.selectedPools.size === 0 
+        ? allSlots 
+        : allSlots.filter(slot => this.selectedPools.has(slot.shortName));
+      
+      if (filteredSlots.length === 0) {
+        windowsContainer.innerHTML = '<span class="no-matching-pools">No matching pools</span>';
+        return;
+      }
+      
+      // Recalculate windows from filtered slots
+      const windows = this.mergeIntoAvailabilityWindows(filteredSlots);
+      const uniqueId = `day-${dateStr.replace(/-/g, '')}`;
+      
+      // Update the windows HTML
+      windowsContainer.innerHTML = this.renderAvailabilityWindowButtons(windows, uniqueId);
+      
+      // Re-attach click handlers
+      windowsContainer.querySelectorAll('[data-toggle]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const detail = document.getElementById(`${uniqueId}-detail`);
+          if (detail) {
+            const isExpanded = detail.style.display !== 'none';
+            detail.style.display = isExpanded ? 'none' : 'block';
+            container.classList.toggle('sessions-collapsible--expanded', !isExpanded);
+          }
+        });
+      });
     });
   }
   
@@ -1200,13 +1244,26 @@ class PoolScheduleApp {
         const slots = dayData.slots;
         const shouldCollapse = slots.length >= 4;
         
+        // Enrich slots with shortName for filtering
+        const enrichedSlots = slots.map(slot => {
+          const sectionName = slot.section?.name || slot.slot.section;
+          const shortName = sectionName
+            .replace(' Pool', '')
+            .replace(' (25 YARDS)', '')
+            .replace('DEEP WELL ', 'DW ');
+          return { ...slot, shortName };
+        });
+        
+        // Store slots for this day (for filter recalculation)
+        this.slotsByDate[dateStr] = enrichedSlots;
+        
         if (shouldCollapse) {
           // Merge overlapping times into availability windows
-          const windows = this.mergeIntoAvailabilityWindows(slots);
+          const windows = this.mergeIntoAvailabilityWindows(enrichedSlots);
           const uniqueId = `day-${dateStr.replace(/-/g, '')}`;
           
           // Group slots by pool for table view
-          const poolTable = this.groupSlotsByPool(slots);
+          const poolTable = this.groupSlotsByPool(enrichedSlots);
           
           // Build table HTML
           const tableHtml = poolTable.map(pool => `
@@ -1217,17 +1274,9 @@ class PoolScheduleApp {
           `).join('');
           
           sessionsHtml = `
-            <div class="sessions-collapsible" id="${uniqueId}">
-              <div class="availability-windows">
-                ${windows.map(w => `
-                  <button class="availability-window" data-toggle="${uniqueId}">
-                    <svg class="availability-window__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
-                    <span class="availability-window__time">${this.formatTimeAMPM(w.start)} - ${this.formatTimeAMPM(w.end)}</span>
-                    <span class="availability-window__count">${w.poolCount} pool${w.poolCount > 1 ? 's' : ''}</span>
-                  </button>
-                `).join('')}
+            <div class="sessions-collapsible" id="${uniqueId}" data-date="${dateStr}">
+              <div class="availability-windows" id="${uniqueId}-windows">
+                ${this.renderAvailabilityWindowButtons(windows, uniqueId)}
               </div>
               <div class="sessions-detail" id="${uniqueId}-detail" style="display: none;">
                 <div class="pool-table">
@@ -1279,7 +1328,23 @@ class PoolScheduleApp {
   }
   
   /**
+   * Render availability window buttons as HTML
+   */
+  renderAvailabilityWindowButtons(windows, uniqueId) {
+    return windows.map(w => `
+      <button class="availability-window" data-toggle="${uniqueId}">
+        <svg class="availability-window__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+        <span class="availability-window__time">${this.formatTimeAMPM(w.start)} - ${this.formatTimeAMPM(w.end)}</span>
+        <span class="availability-window__count">${w.poolCount} pool${w.poolCount > 1 ? 's' : ''}</span>
+      </button>
+    `).join('');
+  }
+  
+  /**
    * Merge slots into continuous availability windows
+   * Only merges when sessions actually overlap or touch
    */
   mergeIntoAvailabilityWindows(slots) {
     // Sort by start time
@@ -1299,14 +1364,14 @@ class PoolScheduleApp {
           pools: new Set([slot.slot.section])
         };
       } else if (slot.startMinutes <= currentWindow.endMinutes) {
-        // Overlaps with current window - extend it
+        // Overlaps or touches current window - extend it
         if (slot.endMinutes > currentWindow.endMinutes) {
           currentWindow.endMinutes = slot.endMinutes;
           currentWindow.end = slot.slot.end;
         }
         currentWindow.pools.add(slot.slot.section);
       } else {
-        // Gap - save current window and start new one
+        // Gap or just touching - save current window and start new one
         windows.push({
           start: currentWindow.start,
           end: currentWindow.end,

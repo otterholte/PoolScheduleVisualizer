@@ -2255,6 +2255,13 @@ body::before {
   border-radius: 10px;
 }
 
+.no-matching-pools {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 8px 0;
+}
+
 /* Sessions Detail - Pool Table */
 .sessions-detail {
   margin-top: 8px;
