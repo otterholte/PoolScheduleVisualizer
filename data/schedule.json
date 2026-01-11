@@ -95,10 +95,10 @@
       { "section": "instructional", "lanes": ["N", "S"], "start": "10:00", "end": "14:00", "activity": "youth_swim" },
       { "section": "instructional", "lanes": ["N", "S"], "start": "14:00", "end": "18:00", "activity": "open_lap" },
 
-      { "section": "shallow", "lanes": [1, 2, 3, 4, 5, 6], "start": "06:00", "end": "09:00", "activity": "swim_team" },
-      { "section": "shallow", "lanes": [1, 2, 3, 4, 5, 6], "start": "09:00", "end": "12:00", "activity": "open_lap" },
-      { "section": "shallow", "lanes": [1, 2, 3, 4, 5, 6], "start": "12:00", "end": "15:00", "activity": "private_rental" },
-      { "section": "shallow", "lanes": [1, 2, 3, 4, 5, 6], "start": "15:00", "end": "18:00", "activity": "open_lap" },
+      { "section": "shallow", "lanes": [1, 2, 3, 4, 5, 6], "start": "06:00", "end": "09:15", "activity": "swim_team" },
+      { "section": "shallow", "lanes": [1, 2, 3, 4, 5, 6], "start": "09:15", "end": "12:00", "activity": "open_lap" },
+      { "section": "shallow", "lanes": [1, 2, 3, 4, 5, 6], "start": "12:00", "end": "14:45", "activity": "private_rental" },
+      { "section": "shallow", "lanes": [1, 2, 3, 4, 5, 6], "start": "14:45", "end": "18:00", "activity": "open_lap" },
 
       { "section": "main", "lanes": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], "start": "06:00", "end": "10:00", "activity": "swim_team" },
       { "section": "main", "lanes": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], "start": "10:00", "end": "14:00", "activity": "open_lap" },
@@ -107,11 +107,11 @@
       { "section": "deep", "lanes": [1, 2, 3], "start": "06:00", "end": "10:00", "activity": "diving" },
       { "section": "deep", "lanes": [1, 2, 3], "start": "10:00", "end": "18:00", "activity": "open_lap" },
 
-      { "section": "deep_south", "lanes": ["South"], "start": "08:00", "end": "14:00", "activity": "diving" },
-      { "section": "deep_south", "lanes": ["South"], "start": "14:00", "end": "18:00", "activity": "open_lap" },
+      { "section": "deep_south", "lanes": ["South"], "start": "08:00", "end": "12:15", "activity": "diving" },
+      { "section": "deep_south", "lanes": ["South"], "start": "12:15", "end": "18:00", "activity": "open_lap" },
 
-      { "section": "deep_north", "lanes": ["North"], "start": "08:00", "end": "12:00", "activity": "kayak" },
-      { "section": "deep_north", "lanes": ["North"], "start": "12:00", "end": "18:00", "activity": "open_lap" }
+      { "section": "deep_north", "lanes": ["North"], "start": "08:00", "end": "11:45", "activity": "kayak" },
+      { "section": "deep_north", "lanes": ["North"], "start": "11:45", "end": "18:00", "activity": "open_lap" }
     ],
     "2026-01-11": [
       { "section": "therapy", "lanes": ["E", "W"], "start": "08:00", "end": "17:00", "activity": "open_lap" },

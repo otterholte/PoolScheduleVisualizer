@@ -244,6 +244,53 @@ body::before {
 }
 
 /* ==========================================
+   View Toggle (Map/Grid)
+   ========================================== */
+.view-toggle {
+  display: flex;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius);
+  padding: 3px;
+  margin-right: 8px;
+}
+
+.view-toggle__btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--radius) - 2px);
+  color: rgba(255, 255, 255, 0.7);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.view-toggle__btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.view-toggle__btn:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.view-toggle__btn--active {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.view-toggle__btn--active:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ==========================================
    Main Layout
    ========================================== */
 .main {
@@ -1537,6 +1584,14 @@ body::before {
   font-style: italic;
 }
 
+.lane-tooltip__location {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
 .lane-tooltip__hint {
   margin-top: 8px;
   padding-top: 8px;
@@ -1625,4 +1680,402 @@ body::before {
   filter: brightness(1.15);
   stroke: white;
   stroke-width: 2;
+}
+
+/* ==========================================
+   Grid View - Full Day Schedule
+   ========================================== */
+.grid-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 72px);
+  padding: 12px 16px;
+  max-width: 1800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Grid Header */
+.grid-view__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  border: 1px solid var(--border-subtle);
+  border-bottom: none;
+  gap: 16px;
+  position: relative;
+  z-index: 100;
+}
+
+.grid-view__header-left,
+.grid-view__header-right {
+  flex-shrink: 0;
+}
+
+.grid-view__header-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Grid Content Area */
+.grid-view__content {
+  display: flex;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  background: var(--bg-secondary);
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  border: 1px solid var(--border-subtle);
+  border-top: none;
+  overflow: hidden;
+}
+
+/* Schedule Grid Container */
+.schedule-grid-container {
+  flex: 1;
+  overflow: auto;
+  padding: 0;
+  position: relative;
+  
+  /* Custom scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-tertiary) transparent;
+}
+
+.schedule-grid-container::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.schedule-grid-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.schedule-grid-container::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 5px;
+}
+
+.schedule-grid-container::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+.schedule-grid-container::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Schedule Grid Table */
+.schedule-grid {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: max-content;
+  min-width: 100%;
+  font-size: 0.75rem;
+}
+
+/* Pool Section Headers (Top Row) */
+.schedule-grid__section-header {
+  background-color: #334155;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  text-align: center;
+  padding: 6px 1px;
+  border-bottom: 3px solid var(--accent-cyan);
+  border-right: 3px solid var(--border-light);
+  white-space: nowrap;
+}
+
+.schedule-grid__section-header:first-child {
+  border-right: 2px solid var(--border-light);
+}
+
+/* Alternating pool section header colors */
+.schedule-grid__section-header--therapy { background-color: #2a3a4a !important; }
+.schedule-grid__section-header--instructional { background-color: #1e2d3d !important; }
+.schedule-grid__section-header--shallow { background-color: #2a3a4a !important; }
+.schedule-grid__section-header--main { background-color: #1e2d3d !important; }
+.schedule-grid__section-header--deep { background-color: #2a3a4a !important; }
+.schedule-grid__section-header--deep-well { background-color: #1e2d3d !important; }
+
+/* Lane Headers (Second Row) */
+.schedule-grid__lane-header {
+  background-color: #273449;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.6rem;
+  text-align: center;
+  padding: 4px 1px;
+  border-bottom: 1px solid var(--border-light);
+  border-right: 1px solid var(--border-subtle);
+  min-width: 26px;
+}
+
+.schedule-grid__lane-header:first-child {
+  border-right: 2px solid var(--border-light);
+  min-width: 58px;
+}
+
+/* Section separator - vertical line between pools */
+.schedule-grid__lane-header--section-end {
+  border-right: 3px solid var(--border-light);
+}
+
+/* Time Column */
+.schedule-grid__time {
+  position: sticky;
+  left: 0;
+  z-index: 20;
+  background-color: #273449;
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.55rem;
+  text-align: right;
+  padding: 0 6px;
+  border-right: 2px solid var(--border-light);
+  white-space: nowrap;
+  min-width: 58px;
+  height: 20px;
+  vertical-align: middle;
+}
+
+/* Data Cells */
+.schedule-grid__cell {
+  padding: 0;
+  border-right: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  height: 20px;
+  min-width: 26px;
+  position: relative;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.schedule-grid__cell:hover {
+  z-index: 10;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+/* Cell with activity */
+.schedule-grid__cell--activity {
+  /* Color set inline via JS */
+}
+
+/* Cell dimmed (filter active, not matching) */
+.schedule-grid__cell--dimmed {
+  background-color: var(--bg-primary) !important; /* No color, just default background */
+}
+
+.schedule-grid__cell--dimmed .schedule-grid__start-time {
+  display: none; /* Hide the start time text for dimmed cells */
+}
+
+/* Cell closed/no activity */
+.schedule-grid__cell--closed {
+  background: var(--bg-primary);
+}
+
+/* Section separator - vertical line between pools */
+.schedule-grid__cell--section-end {
+  border-right: 3px solid var(--border-light) !important;
+}
+
+/* Row Hover Highlight - entire row highlights when hovering any cell */
+.schedule-grid__row--hover {
+  background-color: rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.schedule-grid__row--hover .schedule-grid__time {
+  background-color: #1a3545;
+  color: var(--text-primary);
+}
+
+.schedule-grid__row--hover .schedule-grid__cell {
+  filter: brightness(0.75);
+}
+
+/* Individual cell hover - make it stand out */
+.schedule-grid__cell:hover {
+  filter: brightness(0.55) !important;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+/* Current Time Row Highlight */
+.schedule-grid__row--current .schedule-grid__time {
+  background-color: #1e4a5a;
+  color: var(--accent-cyan);
+  font-weight: 700;
+}
+
+.schedule-grid__row--current .schedule-grid__cell {
+  box-shadow: inset 0 2px 0 var(--accent-cyan), inset 0 -2px 0 var(--accent-cyan);
+}
+
+.schedule-grid__row--current .schedule-grid__cell:first-child {
+  box-shadow: inset 0 2px 0 var(--accent-cyan), inset 0 -2px 0 var(--accent-cyan);
+}
+
+/* Activity Block Spanning Multiple Rows */
+.schedule-grid__activity-block {
+  position: absolute;
+  top: 0;
+  left: 2px;
+  right: 2px;
+  bottom: 0;
+  border-radius: 3px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 4px;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Activity Label (only show on tall blocks) */
+.schedule-grid__activity-label {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  max-height: calc(100% - 8px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.55rem;
+  letter-spacing: 0.02em;
+}
+
+/* Activity Start Time Indicator - only shown for off-grid times (:15, :45) */
+.schedule-grid__start-time {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+}
+
+/* Grid Legend Sidebar */
+.legend-sidebar--grid {
+  border-radius: 0;
+  border: none;
+  border-left: 1px solid var(--border-subtle);
+  height: auto;
+  position: static;
+}
+
+/* Grid View Expanded - legend hidden, content takes full viewport height */
+.grid-view--expanded {
+  height: auto; /* Remove fixed height constraint */
+  flex: none; /* Don't flex, allow natural height */
+}
+
+.grid-view--expanded .grid-view__content {
+  height: 100vh;
+  min-height: 100vh;
+  flex: none; /* Don't flex, use explicit height */
+}
+
+/* Expanded mode: larger rows and more readable text */
+.grid-view--expanded .schedule-grid__time {
+  height: 28px;
+  font-size: 0.7rem;
+  padding: 0 8px;
+}
+
+.grid-view--expanded .schedule-grid__cell {
+  height: 28px;
+}
+
+.grid-view--expanded .schedule-grid__start-time {
+  font-size: 0.65rem;
+}
+
+.grid-view--expanded .schedule-grid__section-header,
+.grid-view--expanded .schedule-grid__lane-header {
+  font-size: 0.65rem;
+  padding: 8px 3px;
+}
+
+.grid-view--expanded .schedule-grid__lane-header {
+  top: 36px; /* Adjusted for larger section headers in expanded mode */
+}
+
+/* Responsive Grid View */
+@media (max-width: 1200px) {
+  .legend-sidebar--grid {
+    width: 220px;
+  }
+}
+
+@media (max-width: 900px) {
+  .grid-view__content {
+    flex-direction: column;
+  }
+  
+  .legend-sidebar--grid {
+    width: 100%;
+    max-height: 200px;
+    border-left: none;
+    border-top: 1px solid var(--border-subtle);
+  }
+  
+  .schedule-grid-container {
+    flex: none;
+    height: calc(100vh - 350px);
+  }
+}
+
+@media (max-width: 768px) {
+  .grid-view__header {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 12px;
+  }
+  
+  .grid-view__header-center {
+    position: static;
+    transform: none;
+    order: 3;
+    width: 100%;
+    flex-direction: row;
+    justify-content: center;
+  }
+  
+  .schedule-grid__cell {
+    min-width: 20px;
+    height: 18px;
+  }
+  
+  .schedule-grid__time {
+    min-width: 45px;
+    font-size: 0.5rem;
+    padding: 0 3px;
+  }
+  
+  .schedule-grid__section-header,
+  .schedule-grid__lane-header {
+    font-size: 0.5rem;
+    padding: 3px 1px;
+  }
 }
