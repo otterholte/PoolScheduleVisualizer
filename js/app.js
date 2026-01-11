@@ -89,6 +89,11 @@ class PoolScheduleApp {
     this.pickerMonth = new Date();
     this.datePickerOpen = false;
     
+    // List view date range - start date for displaying upcoming sessions
+    this.listStartDate = new Date();
+    this.listPickerMonth = new Date();
+    this.listDatePickerOpen = false;
+    
     // Track if Open Swim quick filter mode is active (hides other categories)
     this.openSwimQuickMode = false;
     
@@ -822,21 +827,33 @@ class PoolScheduleApp {
   /**
    * Render inline results for an activity (uses same logic as renderWeekGrid)
    */
-  renderInlineResults(activityId, container) {
+  renderInlineResults(activityId, container, resetDate = true) {
     const activity = this.schedule.getActivity(activityId);
     if (!activity) return;
     
     this.selectedListActivity = activity;
     this.daysToShow = 7;
     
-    // Reset pool filter for new activity
-    this.selectedPools = new Set();
+    // Reset start date only if this is a fresh selection
+    if (resetDate) {
+      this.listStartDate = new Date();
+      this.listPickerMonth = new Date();
+      this.selectedPools = new Set();
+    }
     
-    // Get upcoming slots
-    const allSlots = this.collectUpcomingSlots(activityId, this.daysToShow);
+    // Get slots starting from listStartDate
+    const allSlots = this.collectSlotsFromDate(activityId, this.listStartDate, this.daysToShow);
     
     // Store slots for filtering
     this.currentSlots = allSlots;
+    
+    // Calculate date range for display
+    const startDate = new Date(this.listStartDate);
+    const endDate = new Date(this.listStartDate);
+    endDate.setDate(endDate.getDate() + this.daysToShow - 1);
+    
+    const startStr = `${startDate.getMonth() + 1}/${startDate.getDate()}`;
+    const endStr = `${endDate.getMonth() + 1}/${endDate.getDate()}`;
     
     // Get unique pool names for filter
     const poolNames = this.getUniquePoolNames(allSlots);
@@ -846,12 +863,52 @@ class PoolScheduleApp {
       </button>
     `).join('');
     
-    // Build inline HTML with filter
+    // Build inline HTML with date nav and filter
     let html = `
       <div class="inline-results__separator"></div>
       <div class="inline-results__content">
         <div class="inline-results__header">
-          <span class="inline-results__title">Upcoming Schedule</span>
+          <span class="inline-results__title">Upcoming</span>
+          <div class="inline-date-nav">
+            <button type="button" class="inline-date-nav__btn" id="inlineDatePrev" title="Previous Week">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+            <button type="button" class="inline-date-nav__range" id="inlineDateRange">
+              <span>${startStr} - ${endStr}</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </button>
+            <button type="button" class="inline-date-nav__btn" id="inlineDateNext" title="Next Week">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+            <div class="inline-date-picker" id="inlineDatePicker">
+              <div class="inline-date-picker__header">
+                <button type="button" class="inline-date-picker__nav" id="inlinePickerPrev">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                  </svg>
+                </button>
+                <span class="inline-date-picker__month" id="inlinePickerMonth"></span>
+                <button type="button" class="inline-date-picker__nav" id="inlinePickerNext">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
+              </div>
+              <div class="inline-date-picker__weekdays">
+                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+              </div>
+              <div class="inline-date-picker__days" id="inlinePickerDays"></div>
+            </div>
+          </div>
           <div class="pool-filter">
             <button type="button" class="pool-filter-btn" id="inlinePoolFilterBtn">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -875,7 +932,7 @@ class PoolScheduleApp {
     `;
     
     if (allSlots.length === 0) {
-      html += `<p class="inline-results__empty">No upcoming sessions in the next ${this.daysToShow} days</p>`;
+      html += `<p class="inline-results__empty">No sessions found for this week</p>`;
     } else {
       html += this.renderInlineWeekGrid(allSlots);
     }
@@ -889,6 +946,214 @@ class PoolScheduleApp {
     
     // Setup filter listeners for inline results
     this.setupInlineFilterListeners();
+    
+    // Setup date navigation listeners
+    this.setupInlineDateNavListeners(activityId, container);
+  }
+  
+  /**
+   * Collect slots for an activity starting from a specific date
+   */
+  collectSlotsFromDate(activityId, startDate, numDays) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const currentTimeMinutes = this.getCurrentTimeMinutes();
+    const upcomingSlots = [];
+    
+    for (let i = 0; i < numDays; i++) {
+      const date = new Date(startDate);
+      date.setDate(date.getDate() + i);
+      const dateStr = this.formatDate(date);
+      
+      const slots = this.schedule.findActivitySlots(dateStr, activityId);
+      const isToday = date.toDateString() === today.toDateString();
+      
+      slots.forEach(slot => {
+        const startMinutes = this.schedule.timeToMinutes(slot.start);
+        const endMinutes = this.schedule.timeToMinutes(slot.end);
+        
+        // Skip past events if this is today
+        if (isToday && endMinutes <= currentTimeMinutes) return;
+        
+        const isCurrent = isToday && currentTimeMinutes >= startMinutes && currentTimeMinutes < endMinutes;
+        const isUpcoming = isToday && startMinutes > currentTimeMinutes;
+        
+        const section = this.schedule.getSection(slot.section);
+        
+        upcomingSlots.push({
+          date: dateStr,
+          dateObj: new Date(date),
+          dayIndex: i,
+          slot,
+          section,
+          startMinutes,
+          endMinutes,
+          isCurrent,
+          isUpcoming: isUpcoming && !isCurrent
+        });
+      });
+    }
+    
+    // Sort by date then time
+    upcomingSlots.sort((a, b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      return a.startMinutes - b.startMinutes;
+    });
+    
+    return upcomingSlots;
+  }
+  
+  /**
+   * Setup date navigation listeners for inline results
+   */
+  setupInlineDateNavListeners(activityId, container) {
+    const prevBtn = document.getElementById('inlineDatePrev');
+    const nextBtn = document.getElementById('inlineDateNext');
+    const rangeBtn = document.getElementById('inlineDateRange');
+    const picker = document.getElementById('inlineDatePicker');
+    const pickerPrev = document.getElementById('inlinePickerPrev');
+    const pickerNext = document.getElementById('inlinePickerNext');
+    
+    // Prev week button
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        this.listStartDate.setDate(this.listStartDate.getDate() - 7);
+        this.renderInlineResults(activityId, container, false);
+      });
+    }
+    
+    // Next week button
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        this.listStartDate.setDate(this.listStartDate.getDate() + 7);
+        this.renderInlineResults(activityId, container, false);
+      });
+    }
+    
+    // Date range button - toggle picker
+    if (rangeBtn) {
+      rangeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.listDatePickerOpen = !this.listDatePickerOpen;
+        picker.classList.toggle('inline-date-picker--open', this.listDatePickerOpen);
+        if (this.listDatePickerOpen) {
+          this.renderInlineDatePicker(activityId, container);
+        }
+      });
+    }
+    
+    // Picker prev/next month
+    if (pickerPrev) {
+      pickerPrev.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.listPickerMonth.setMonth(this.listPickerMonth.getMonth() - 1);
+        this.renderInlineDatePicker(activityId, container);
+      });
+    }
+    
+    if (pickerNext) {
+      pickerNext.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.listPickerMonth.setMonth(this.listPickerMonth.getMonth() + 1);
+        this.renderInlineDatePicker(activityId, container);
+      });
+    }
+    
+    // Close picker when clicking outside
+    document.addEventListener('click', (e) => {
+      if (picker && this.listDatePickerOpen && !picker.contains(e.target) && e.target !== rangeBtn) {
+        this.listDatePickerOpen = false;
+        picker.classList.remove('inline-date-picker--open');
+      }
+    }, { once: true });
+  }
+  
+  /**
+   * Render the inline date picker calendar
+   */
+  renderInlineDatePicker(activityId, container) {
+    const monthLabel = document.getElementById('inlinePickerMonth');
+    const daysContainer = document.getElementById('inlinePickerDays');
+    
+    if (!monthLabel || !daysContainer) return;
+    
+    const year = this.listPickerMonth.getFullYear();
+    const month = this.listPickerMonth.getMonth();
+    
+    monthLabel.textContent = this.listPickerMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    
+    // Get first day of month and number of days
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
+    
+    // Current range start and end
+    const rangeStart = new Date(this.listStartDate);
+    rangeStart.setHours(0, 0, 0, 0);
+    const rangeEnd = new Date(this.listStartDate);
+    rangeEnd.setDate(rangeEnd.getDate() + this.daysToShow - 1);
+    rangeEnd.setHours(23, 59, 59, 999);
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    let html = '';
+    
+    // Previous month days
+    for (let i = firstDay - 1; i >= 0; i--) {
+      const day = daysInPrevMonth - i;
+      html += `<button class="inline-date-picker__day inline-date-picker__day--other-month" data-date="${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}">${day}</button>`;
+    }
+    
+    // Current month days
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month, day);
+      date.setHours(0, 0, 0, 0);
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      
+      let classes = ['inline-date-picker__day'];
+      
+      if (date.getTime() === today.getTime()) {
+        classes.push('inline-date-picker__day--today');
+      }
+      
+      if (date >= rangeStart && date <= rangeEnd) {
+        classes.push('inline-date-picker__day--in-range');
+      }
+      
+      if (date.getTime() === rangeStart.getTime()) {
+        classes.push('inline-date-picker__day--start');
+      }
+      
+      if (date.getTime() === rangeEnd.getTime()) {
+        classes.push('inline-date-picker__day--end');
+      }
+      
+      html += `<button class="${classes.join(' ')}" data-date="${dateStr}">${day}</button>`;
+    }
+    
+    // Next month days to fill grid
+    const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+    const nextMonthDays = totalCells - (firstDay + daysInMonth);
+    for (let day = 1; day <= nextMonthDays; day++) {
+      html += `<button class="inline-date-picker__day inline-date-picker__day--other-month" data-date="${year}-${String(month + 2).padStart(2, '0')}-${String(day).padStart(2, '0')}">${day}</button>`;
+    }
+    
+    daysContainer.innerHTML = html;
+    
+    // Add click handlers to day buttons
+    daysContainer.querySelectorAll('.inline-date-picker__day').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const dateStr = btn.dataset.date;
+        if (dateStr) {
+          this.listStartDate = new Date(dateStr + 'T12:00:00');
+          this.listDatePickerOpen = false;
+          document.getElementById('inlineDatePicker')?.classList.remove('inline-date-picker--open');
+          this.renderInlineResults(activityId, container, false);
+        }
+      });
+    });
   }
   
   /**
@@ -905,18 +1170,33 @@ class PoolScheduleApp {
     const datesToShow = Object.keys(byDate).sort().slice(0, this.daysToShow);
     let html = '';
     
+    // Check if we're viewing current week or a future week
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const listStart = new Date(this.listStartDate);
+    listStart.setHours(0, 0, 0, 0);
+    const isViewingCurrentWeek = listStart.getTime() === today.getTime();
+    
     datesToShow.forEach((dateStr, idx) => {
       const dayData = byDate[dateStr];
       const dateObj = new Date(dateStr + 'T12:00:00');
       const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
       const dateDisplay = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       
-      // Day badge
+      // Day badge - show TODAY/TOMORROW only if viewing current week
       let badgeHtml = '';
-      if (idx === 0) {
+      const dateCheck = new Date(dateStr + 'T12:00:00');
+      dateCheck.setHours(0, 0, 0, 0);
+      
+      if (dateCheck.getTime() === today.getTime()) {
         badgeHtml = '<span class="week-day__badge">Today</span>';
-      } else if (idx === 1) {
+      } else if (dateCheck.getTime() === tomorrow.getTime()) {
         badgeHtml = '<span class="week-day__badge" style="background: rgba(59, 130, 246, 0.15); color: var(--accent-blue);">Tomorrow</span>';
+      } else if (idx === 0 && !isViewingCurrentWeek) {
+        // First day of a future week - show "Selected" badge
+        badgeHtml = '<span class="week-day__badge" style="background: rgba(139, 92, 246, 0.15); color: var(--accent-purple);">Selected</span>';
       }
       
       // Sessions HTML
@@ -1791,17 +2071,26 @@ class PoolScheduleApp {
     // Render body
     body.innerHTML = '';
     
+    // Check dates for badge logic
+    const todayCheck = new Date();
+    todayCheck.setHours(0, 0, 0, 0);
+    const tomorrowCheck = new Date(todayCheck);
+    tomorrowCheck.setDate(tomorrowCheck.getDate() + 1);
+    
     datesToShow.forEach((dateStr, idx) => {
       const dayData = byDate[dateStr];
       const dateObj = new Date(dateStr + 'T12:00:00');
       const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
       const dateDisplay = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       
-      // Day badge
+      // Day badge - check actual date
       let badgeHtml = '';
-      if (idx === 0) {
+      const dateCheck = new Date(dateStr + 'T12:00:00');
+      dateCheck.setHours(0, 0, 0, 0);
+      
+      if (dateCheck.getTime() === todayCheck.getTime()) {
         badgeHtml = '<span class="week-day__badge">Today</span>';
-      } else if (idx === 1) {
+      } else if (dateCheck.getTime() === tomorrowCheck.getTime()) {
         badgeHtml = '<span class="week-day__badge" style="background: rgba(59, 130, 246, 0.15); color: var(--accent-blue);">Tomorrow</span>';
       }
       
