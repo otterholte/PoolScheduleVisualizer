@@ -1021,8 +1021,9 @@
 
 .help-modal--visible {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  padding-top: 120px;
 }
 
 .help-modal__backdrop {
