@@ -798,12 +798,12 @@ class PoolScheduleApp {
     // Reset styles
     laneEl.style.opacity = '1';
     laneEl.style.filter = '';
-    laneEl.setAttribute('fill-opacity', '1'); // Ensure fill is visible
+    laneEl.setAttribute('fill-opacity', '1'); // Ensure fill is visible (covers background)
     
     if (!status) {
       // No activity - closed/unavailable
+      // Use solid gray at full opacity to fully cover any background
       laneEl.setAttribute('fill', '#374151');
-      laneEl.style.opacity = '0.5';
       return;
     }
     
@@ -816,9 +816,9 @@ class PoolScheduleApp {
         laneEl.setAttribute('fill', activity.color);
         laneEl.style.filter = 'brightness(1.05) drop-shadow(0 0 4px ' + activity.color + ')';
       } else {
-        // Non-matching activity - gray out completely
-        laneEl.setAttribute('fill', '#4b5563');
-        laneEl.style.opacity = '0.4';
+        // Non-matching activity - use solid muted gray (NOT opacity)
+        // This ensures no background color bleeds through
+        laneEl.setAttribute('fill', '#3f4a5a');
       }
     } else {
       // No filter active - show normal activity color
