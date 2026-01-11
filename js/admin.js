@@ -65,8 +65,8 @@ class AdminPanel {
       laneTooltipContent: document.getElementById('adminLaneTooltipContent')
     };
     
-    // Current view: 'list' or 'grid'
-    this.currentView = 'list';
+    // Current view: 'list' or 'grid' (grid is default)
+    this.currentView = 'grid';
     
     // Filter state for grid view
     this.activeFilters = [];
@@ -116,6 +116,11 @@ class AdminPanel {
       // Setup view toggle and render grid legend
       this.setupViewToggle();
       this.renderGridLegend();
+      
+      // Apply view from URL (or default to grid)
+      const initialView = this.getViewFromURL();
+      this.currentView = initialView === 'grid' ? 'list' : 'grid'; // Set opposite so switchView actually switches
+      this.switchView(initialView, false); // Don't update URL on initial load
       
     } catch (error) {
       console.error('Failed to initialize admin panel:', error);
@@ -864,7 +869,7 @@ class AdminPanel {
     return btn;
   }
   
-  switchView(view) {
+  switchView(view, updateURL = true) {
     if (this.currentView === view) return;
     this.currentView = view;
     
@@ -883,6 +888,24 @@ class AdminPanel {
       this.elements.gridView.style.display = 'block';
       this.renderGridView();
     }
+    
+    // Update URL slug
+    if (updateURL) {
+      this.updateAdminURL();
+    }
+  }
+  
+  updateAdminURL() {
+    const params = new URLSearchParams(window.location.search);
+    params.set('view', this.currentView);
+    const newURL = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState({}, '', newURL);
+  }
+  
+  getViewFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get('view');
+    return (view === 'list' || view === 'grid') ? view : 'grid'; // Default to grid
   }
   
   // ==========================================
@@ -1095,6 +1118,52 @@ class AdminPanel {
         this.selectedCells.add(cell);
       }
     });
+    
+    // Update selection tooltip during drag
+    if (this.isSelecting && this.selectedCells.size > 0) {
+      this.showSelectionTooltip();
+    }
+  }
+  
+  showSelectionTooltip() {
+    const info = this.getSelectionInfo();
+    if (!info) return;
+    
+    // Create or get tooltip
+    let tooltip = document.getElementById('selectionTooltip');
+    if (!tooltip) {
+      tooltip = document.createElement('div');
+      tooltip.id = 'selectionTooltip';
+      tooltip.className = 'selection-tooltip';
+      document.body.appendChild(tooltip);
+    }
+    
+    // Build pool summary
+    const poolSummary = info.sections.map(s => {
+      const laneStr = s.lanes.length > 3 
+        ? `${s.lanes[0]}-${s.lanes[s.lanes.length - 1]}`
+        : s.lanes.join(', ');
+      return `${s.name.replace(' Pool', '').replace(' (25 Yards)', '')} (${laneStr})`;
+    }).join(' + ');
+    
+    tooltip.innerHTML = `
+      <div class="selection-tooltip__time">${info.startTimeStr} - ${info.endTimeStr}</div>
+      <div class="selection-tooltip__pools">${poolSummary}</div>
+      <div class="selection-tooltip__count">${info.cellCount} cells</div>
+    `;
+    
+    // Position near cursor (use last mouse position from selection end cell)
+    const rect = this.selectionEnd.getBoundingClientRect();
+    tooltip.style.left = (rect.right + 10) + 'px';
+    tooltip.style.top = (rect.top) + 'px';
+    tooltip.classList.add('selection-tooltip--visible');
+  }
+  
+  hideSelectionTooltip() {
+    const tooltip = document.getElementById('selectionTooltip');
+    if (tooltip) {
+      tooltip.classList.remove('selection-tooltip--visible');
+    }
   }
   
   getCellColumnIndex(cell) {
@@ -1107,6 +1176,7 @@ class AdminPanel {
   endSelection(e) {
     if (!this.isSelecting) return;
     this.isSelecting = false;
+    this.hideSelectionTooltip();
     
     if (this.selectedCells.size > 0) {
       // Check if we're in quick-add mode (single activity selected in legend)
@@ -1132,6 +1202,7 @@ class AdminPanel {
     allCells.forEach(c => c.classList.remove('schedule-grid__cell--selected'));
     this.selectedCells.clear();
     
+    this.hideSelectionTooltip();
     this.closeSelectionPanel();
   }
   
