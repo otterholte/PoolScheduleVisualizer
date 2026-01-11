@@ -430,19 +430,38 @@
       </aside>
     </div>
     
-    <!-- List View (Coming Soon) -->
+    <!-- List View - Activity Finder -->
     <div id="listView" class="list-view" style="display: none;">
-      <div class="list-view__placeholder">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="64" height="64">
-          <line x1="8" y1="6" x2="21" y2="6"></line>
-          <line x1="8" y1="12" x2="21" y2="12"></line>
-          <line x1="8" y1="18" x2="21" y2="18"></line>
-          <line x1="3" y1="6" x2="3.01" y2="6"></line>
-          <line x1="3" y1="12" x2="3.01" y2="12"></line>
-          <line x1="3" y1="18" x2="3.01" y2="18"></line>
-        </svg>
-        <h2>List View Coming Soon</h2>
-        <p>This view will display the schedule in a list format.</p>
+      <div class="list-view__container">
+        <!-- Activity Selector -->
+        <div class="activity-selector" id="activitySelector">
+          <div class="activity-selector__header">
+            <h2 class="activity-selector__title">Find Your Activity</h2>
+            <p class="activity-selector__subtitle">Select an activity to see upcoming times over the next 10 days</p>
+          </div>
+          <div class="activity-selector__grid" id="activitySelectorGrid">
+            <!-- Activity cards will be rendered here -->
+          </div>
+        </div>
+        
+        <!-- Results Section (hidden until activity selected) -->
+        <div class="activity-results" id="activityResults" style="display: none;">
+          <div class="activity-results__header">
+            <button class="activity-results__back" id="activityResultsBack" title="Back to activity selector">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+              <span>Back</span>
+            </button>
+            <div class="activity-results__selected">
+              <div class="activity-results__selected-color" id="selectedActivityColor"></div>
+              <h3 class="activity-results__selected-name" id="selectedActivityName">Activity Name</h3>
+            </div>
+          </div>
+          <div class="activity-results__list" id="activityResultsList">
+            <!-- Results will be rendered here -->
+          </div>
+        </div>
       </div>
     </div>
   </main>

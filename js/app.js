@@ -49,9 +49,19 @@ class PoolScheduleApp {
       // Quick filter buttons
       quickFilterOpenSwim: document.getElementById('quickFilterOpenSwim'),
       quickFilterShowAll: document.getElementById('quickFilterShowAll'),
-      // List view element
-      listView: document.getElementById('listView')
+      // List view elements
+      listView: document.getElementById('listView'),
+      activitySelector: document.getElementById('activitySelector'),
+      activitySelectorGrid: document.getElementById('activitySelectorGrid'),
+      activityResults: document.getElementById('activityResults'),
+      activityResultsBack: document.getElementById('activityResultsBack'),
+      activityResultsList: document.getElementById('activityResultsList'),
+      selectedActivityColor: document.getElementById('selectedActivityColor'),
+      selectedActivityName: document.getElementById('selectedActivityName')
     };
+    
+    // Currently selected activity for list view
+    this.selectedListActivity = null;
     
     // Calendar picker state
     this.pickerMonth = new Date();
@@ -562,6 +572,11 @@ class PoolScheduleApp {
     
     // View toggle (Map/Grid)
     this.setupViewToggle();
+    
+    // List view back button
+    if (this.elements.activityResultsBack) {
+      this.elements.activityResultsBack.addEventListener('click', () => this.showActivitySelector());
+    }
   }
   
   setupViewToggle() {
@@ -600,11 +615,336 @@ class PoolScheduleApp {
     } else if (view === 'list') {
       if (mapView) mapView.style.display = 'none';
       if (listView) listView.style.display = 'flex';
-      // List view will be implemented later
+      // Render activity selector if not already done
+      this.renderActivitySelector();
+      // Show selector, hide results
+      this.showActivitySelector();
     }
     
     // Update URL with new view
     this.updateURL();
+  }
+  
+  /**
+   * Render the activity selector grid with cards
+   */
+  renderActivitySelector() {
+    const container = this.elements.activitySelectorGrid;
+    if (!container) return;
+    
+    // Don't re-render if already populated (check for actual element children, not comments)
+    const hasCards = Array.from(container.children).some(child => child.nodeType === Node.ELEMENT_NODE);
+    if (hasCards) return;
+    
+    const activities = this.schedule.getActivities();
+    const categories = this.schedule.getActivityCategories();
+    
+    // Group activities by category
+    const byCategory = {};
+    categories.forEach(cat => {
+      byCategory[cat.id] = {
+        name: cat.name,
+        activities: activities
+          .filter(a => a.category === cat.id && a.id !== 'closed')
+          .sort((a, b) => a.name.localeCompare(b.name))
+      };
+    });
+    
+    // Render each category with its activities
+    categories.forEach(cat => {
+      const group = byCategory[cat.id];
+      if (!group || group.activities.length === 0) return;
+      
+      // Category header
+      const categoryHeader = document.createElement('div');
+      categoryHeader.className = 'activity-selector__category';
+      categoryHeader.innerHTML = `<span class="activity-selector__category-name">${group.name}</span>`;
+      container.appendChild(categoryHeader);
+      
+      // Activity cards
+      group.activities.forEach(activity => {
+        const card = this.createActivityCard(activity, group.name);
+        container.appendChild(card);
+      });
+    });
+  }
+  
+  /**
+   * Create an activity card element
+   */
+  createActivityCard(activity, categoryName) {
+    const card = document.createElement('button');
+    card.className = 'activity-card';
+    card.type = 'button';
+    card.dataset.activityId = activity.id;
+    card.style.setProperty('--card-accent-color', activity.color);
+    card.title = `View ${activity.name} schedule`;
+    
+    // Get icon based on activity type
+    const iconSvg = this.getActivityIcon(activity.id);
+    
+    card.innerHTML = `
+      <div class="activity-card__icon" style="background: ${activity.color}">
+        ${iconSvg}
+      </div>
+      <span class="activity-card__name">${activity.name}</span>
+      <span class="activity-card__category">${categoryName}</span>
+    `;
+    
+    card.addEventListener('click', () => this.selectListActivity(activity.id));
+    
+    return card;
+  }
+  
+  /**
+   * Get an SVG icon for an activity type
+   */
+  getActivityIcon(activityId) {
+    const icons = {
+      open_lap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h2a2 2 0 0 1 2 2v1a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-1a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1a2 2 0 0 0 2 2h1"></path></svg>',
+      masters: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"></circle><path d="M3 21v-2a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v2"></path></svg>',
+      swim_team: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>',
+      diving: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L12 8"></path><path d="M8 4h8"></path><circle cx="12" cy="14" r="3"></circle><path d="M9 17l-2 5"></path><path d="M15 17l2 5"></path></svg>',
+      high_school: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"></path></svg>',
+      synchro: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>',
+      university: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"></path></svg>',
+      water_polo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>',
+      aqua_fitness: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>',
+      learn_to_swim: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>',
+      youth_swim: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="4" r="2"></circle><path d="M15 22v-6H9v6"></path><path d="M12 6v4"></path><circle cx="8" cy="14" r="2"></circle><circle cx="16" cy="14" r="2"></circle></svg>',
+      dive_rescue: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>',
+      kayak: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 16s2-2 4-2 4 2 6 2 4-2 6-2 4 2 4 2"></path><path d="M5.5 12.5L18.5 12.5"></path><ellipse cx="12" cy="10" rx="3" ry="2"></ellipse></svg>',
+      scuba: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="6"></circle><path d="M12 16v6"></path><path d="M8 22h8"></path><path d="M18 10a6 6 0 0 0-12 0"></path></svg>',
+      adaptive: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"></circle><path d="M12 8v4"></path><circle cx="12" cy="18" r="4"></circle><path d="M12 14v0"></path></svg>',
+      therapy_session: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>',
+      private_rental: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>'
+    };
+    
+    return icons[activityId] || '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg>';
+  }
+  
+  /**
+   * Select an activity and show upcoming times
+   */
+  selectListActivity(activityId) {
+    const activity = this.schedule.getActivity(activityId);
+    if (!activity) return;
+    
+    this.selectedListActivity = activity;
+    
+    // Update header
+    this.elements.selectedActivityName.textContent = activity.name;
+    this.elements.selectedActivityColor.style.background = activity.color;
+    
+    // Show results, hide selector
+    this.elements.activitySelector.style.display = 'none';
+    this.elements.activityResults.style.display = 'flex';
+    
+    // Render upcoming times
+    this.renderUpcomingTimes(activityId);
+  }
+  
+  /**
+   * Show activity selector, hide results
+   */
+  showActivitySelector() {
+    this.selectedListActivity = null;
+    this.elements.activitySelector.style.display = 'flex';
+    this.elements.activityResults.style.display = 'none';
+  }
+  
+  /**
+   * Render upcoming times for a selected activity
+   */
+  renderUpcomingTimes(activityId) {
+    const container = this.elements.activityResultsList;
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    const today = new Date();
+    const todayStr = this.formatDate(today);
+    const currentTimeMinutes = this.getCurrentTimeMinutes();
+    
+    // Collect all slots for the next 10 days
+    const upcomingSlots = [];
+    
+    for (let i = 0; i < 10; i++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() + i);
+      const dateStr = this.formatDate(date);
+      
+      // Get all slots for this activity on this date
+      const slots = this.schedule.findActivitySlots(dateStr, activityId);
+      
+      slots.forEach(slot => {
+        const startMinutes = this.schedule.timeToMinutes(slot.start);
+        const endMinutes = this.schedule.timeToMinutes(slot.end);
+        
+        // Skip past events on today
+        if (i === 0 && endMinutes <= currentTimeMinutes) return;
+        
+        // Check if this is currently happening
+        const isCurrent = i === 0 && currentTimeMinutes >= startMinutes && currentTimeMinutes < endMinutes;
+        
+        // Check if this is upcoming today (not current, not past)
+        const isUpcomingToday = i === 0 && startMinutes > currentTimeMinutes;
+        
+        // Get section info
+        const section = this.schedule.getSection(slot.section);
+        
+        upcomingSlots.push({
+          date: dateStr,
+          dateObj: new Date(date),
+          dayIndex: i,
+          slot,
+          section,
+          startMinutes,
+          endMinutes,
+          isCurrent,
+          isUpcomingToday,
+          isPast: false
+        });
+      });
+    }
+    
+    // Group by date
+    const byDate = {};
+    upcomingSlots.forEach(item => {
+      if (!byDate[item.date]) {
+        byDate[item.date] = {
+          dateObj: item.dateObj,
+          dayIndex: item.dayIndex,
+          slots: []
+        };
+      }
+      byDate[item.date].slots.push(item);
+    });
+    
+    // Sort slots within each day and mark only first upcoming as "next"
+    Object.values(byDate).forEach(day => {
+      day.slots.sort((a, b) => a.startMinutes - b.startMinutes);
+      
+      // Only mark the first non-current upcoming slot of today as "next"
+      let foundFirst = false;
+      day.slots.forEach(slot => {
+        if (slot.isUpcomingToday && !foundFirst) {
+          foundFirst = true;
+        } else {
+          slot.isUpcomingToday = false;
+        }
+      });
+    });
+    
+    // Check if empty
+    if (Object.keys(byDate).length === 0) {
+      container.innerHTML = `
+        <div class="activity-results__empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 6v6l4 2"></path>
+          </svg>
+          <h3>No Upcoming Sessions</h3>
+          <p>This activity isn't scheduled in the next 10 days.</p>
+        </div>
+      `;
+      return;
+    }
+    
+    // Render each day group
+    Object.entries(byDate)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .forEach(([dateStr, dayData]) => {
+        const dayGroup = document.createElement('div');
+        dayGroup.className = 'results-day-group';
+        
+        // Day header
+        const dayName = dayData.dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+        const dateDisplay = dayData.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        
+        let badgeHtml = '';
+        if (dayData.dayIndex === 0) {
+          badgeHtml = '<span class="results-day-group__badge">Today</span>';
+        } else if (dayData.dayIndex === 1) {
+          badgeHtml = '<span class="results-day-group__badge" style="background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3); color: var(--accent-blue);">Tomorrow</span>';
+        }
+        
+        dayGroup.innerHTML = `
+          <div class="results-day-group__header">
+            <span class="results-day-group__day">${dayName}</span>
+            <span class="results-day-group__date">${dateDisplay}</span>
+            ${badgeHtml}
+          </div>
+        `;
+        
+        // Render slots
+        dayData.slots.forEach(item => {
+          const slotEl = this.createResultsItem(item);
+          dayGroup.appendChild(slotEl);
+        });
+        
+        container.appendChild(dayGroup);
+      });
+  }
+  
+  /**
+   * Create a results item element
+   */
+  createResultsItem(item) {
+    const el = document.createElement('div');
+    el.className = 'results-item';
+    
+    if (item.isCurrent) el.classList.add('results-item--current');
+    if (item.isPast) el.classList.add('results-item--past');
+    
+    // Calculate duration
+    const durationMinutes = item.endMinutes - item.startMinutes;
+    const hours = Math.floor(durationMinutes / 60);
+    const minutes = durationMinutes % 60;
+    let durationStr = '';
+    if (hours > 0) durationStr += `${hours}h `;
+    if (minutes > 0) durationStr += `${minutes}m`;
+    durationStr = durationStr.trim() || '0m';
+    
+    // Format lanes
+    const lanes = item.slot.lanes;
+    let lanesStr = '';
+    if (lanes.length === 1) {
+      lanesStr = `Lane ${lanes[0]}`;
+    } else if (lanes.every(l => typeof l === 'number')) {
+      // Numeric lanes - show range if consecutive
+      const sorted = [...lanes].sort((a, b) => a - b);
+      if (sorted.length > 2 && sorted[sorted.length - 1] - sorted[0] === sorted.length - 1) {
+        lanesStr = `Lanes ${sorted[0]}-${sorted[sorted.length - 1]}`;
+      } else {
+        lanesStr = `Lanes ${sorted.join(', ')}`;
+      }
+    } else {
+      lanesStr = `Lanes ${lanes.join(', ')}`;
+    }
+    
+    // Badge
+    let badgeHtml = '';
+    if (item.isCurrent) {
+      badgeHtml = '<span class="results-item__badge results-item__badge--now">Now</span>';
+    } else if (item.isUpcomingToday) {
+      badgeHtml = '<span class="results-item__badge results-item__badge--upcoming">Next</span>';
+    }
+    
+    el.innerHTML = `
+      <div class="results-item__time">
+        <span class="results-item__time-range">${this.formatTimeAMPM(item.slot.start)} - ${this.formatTimeAMPM(item.slot.end)}</span>
+        <span class="results-item__duration">${durationStr}</span>
+      </div>
+      <div class="results-item__divider"></div>
+      <div class="results-item__location">
+        <span class="results-item__pool">${item.section?.name || item.slot.section}</span>
+        <span class="results-item__lanes">${lanesStr}</span>
+      </div>
+      ${badgeHtml}
+    `;
+    
+    return el;
   }
   
   // Navigate day by offset (-1 for prev, +1 for next)
