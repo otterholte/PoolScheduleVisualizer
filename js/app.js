@@ -15,13 +15,16 @@ class PoolScheduleApp {
     this.activeFilters = [];
     
     this.elements = {
-      clock: document.getElementById('clock'),
-      dateDisplay: document.getElementById('dateDisplay'),
       floorplanTitle: document.getElementById('floorplanTitle'),
       timeDisplay: document.getElementById('timeDisplay'),
       timeSlider: document.getElementById('timeSlider'),
       btnNow: document.getElementById('btnNow'),
       liveIndicator: document.getElementById('liveIndicator'),
+      closedIndicator: document.getElementById('closedIndicator'),
+      poolClosedOverlay: document.getElementById('poolClosedOverlay'),
+      closeOverlayBtn: document.getElementById('closeOverlayBtn'),
+      nextOpenTime: document.getElementById('nextOpenTime'),
+      floorplanWrapper: document.querySelector('.floorplan-wrapper'),
       floorplan: document.getElementById('floorplan'),
       legendGrid: document.getElementById('legendGrid'),
       legendSidebar: document.querySelector('.legend-sidebar'),
@@ -42,12 +45,21 @@ class PoolScheduleApp {
       pickerMonth: document.getElementById('pickerMonth'),
       pickerDays: document.getElementById('pickerDays'),
       prevMonth: document.getElementById('prevMonth'),
-      nextMonth: document.getElementById('nextMonth')
+      nextMonth: document.getElementById('nextMonth'),
+      // Quick filter buttons
+      quickFilterOpenSwim: document.getElementById('quickFilterOpenSwim'),
+      quickFilterShowAll: document.getElementById('quickFilterShowAll')
     };
     
     // Calendar picker state
     this.pickerMonth = new Date();
     this.datePickerOpen = false;
+    
+    // Track if Open Swim quick filter mode is active (hides other categories)
+    this.openSwimQuickMode = false;
+    
+    // Track if user dismissed the closed overlay for today
+    this.closedOverlayDismissed = false;
   }
 
   async init() {
@@ -59,29 +71,106 @@ class PoolScheduleApp {
       this.setupEventListeners();
       this.updateSliderRange();
       this.updateTimeSlider();
+      
+      // Check if first visit - default to Open Swim
+      this.applyDefaultFilter();
+      
       this.updateDisplay();
       
     } catch (error) {
       console.error('Failed to initialize:', error);
     }
   }
+  
+  applyDefaultFilter() {
+    const hasVisited = localStorage.getItem('poolSchedule_hasVisited');
+    
+    if (!hasVisited) {
+      // First visit - default to Open Swim category
+      localStorage.setItem('poolSchedule_hasVisited', 'true');
+      this.selectOpenSwimFilter();
+    }
+    
+    this.updateQuickFilterButtons();
+  }
+  
+  selectOpenSwimFilter() {
+    // Find the Open Swim category
+    const categories = this.schedule.getCategories();
+    const openSwimCategory = categories.find(cat => cat.id === 'open');
+    
+    if (openSwimCategory) {
+      // Get all activity IDs in the Open Swim category
+      const activityIds = this.schedule.getActivitiesByCategory(openSwimCategory.id)
+        .map(a => a.id);
+      
+      // Clear existing filters and add Open Swim category
+      this.activeFilters = [{
+        type: 'category',
+        id: openSwimCategory.id,
+        name: openSwimCategory.name,
+        activityIds: activityIds
+      }];
+      
+      // Enable quick mode to hide other categories
+      this.openSwimQuickMode = true;
+      
+      // Update legend visuals
+      this.updateFilterUI();
+      this.updateLegendStates();
+      this.updateQuickFilterButtons();
+    }
+  }
+  
+  clearAllFilters() {
+    this.activeFilters = [];
+    this.openSwimQuickMode = false;
+    this.updateFilterUI();
+    this.updateLegendStates();
+    this.updateQuickFilterButtons();
+    this.updatePoolLanes();
+  }
+  
+  updateQuickFilterButtons() {
+    // Only show Open Swim as active if in quick mode (clicked the toggle button)
+    const isOpenSwimQuickActive = this.openSwimQuickMode;
+    // Show All as active when no filters OR when manually selecting from legend (not in quick mode)
+    const isAllActive = this.activeFilters.length === 0 || !this.openSwimQuickMode;
+    
+    this.elements.quickFilterOpenSwim.classList.toggle('quick-view-toggle__btn--active', isOpenSwimQuickActive);
+    this.elements.quickFilterShowAll.classList.toggle('quick-view-toggle__btn--active', isAllActive && !isOpenSwimQuickActive);
+  }
 
   setupClock() {
-    const update = () => {
+    // Track last known minute to detect changes
+    let lastMinute = new Date().getMinutes();
+    
+    const checkTimeUpdate = () => {
       const now = new Date();
-      this.elements.clock.textContent = now.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      });
-      this.elements.dateDisplay.textContent = now.toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'short',
-        day: 'numeric'
-      });
+      const currentMinute = now.getMinutes();
+      
+      // Check if minute has changed
+      if (currentMinute !== lastMinute) {
+        lastMinute = currentMinute;
+        
+        // Check if we're viewing today and at live time
+        const today = this.formatDate(now);
+        const currentTimeMinutes = this.getCurrentTimeMinutes();
+        const isViewingToday = this.selectedDate === today;
+        const isAtLiveTime = this.selectedTimeMinutes === this.getCurrentTimeMinutes() - 1 || 
+                            this.selectedTimeMinutes === currentTimeMinutes;
+        
+        if (isViewingToday && isAtLiveTime) {
+          // Update to current time and refresh display
+          this.selectedTimeMinutes = currentTimeMinutes;
+          this.updateTimeSlider();
+          this.updateDisplay();
+        }
+      }
     };
-    update();
-    setInterval(update, 1000);
+    
+    // Check every 10 seconds for minute changes
+    setInterval(checkTimeUpdate, 10000);
   }
 
   renderLegend() {
@@ -165,6 +254,9 @@ class PoolScheduleApp {
   }
 
   toggleActivityFilter(activityId) {
+    // Disable quick mode when manually selecting from legend
+    this.openSwimQuickMode = false;
+    
     const existingIndex = this.activeFilters.findIndex(
       f => f.type === 'activity' && f.id === activityId
     );
@@ -187,6 +279,9 @@ class PoolScheduleApp {
   }
 
   toggleCategoryFilter(categoryId) {
+    // Disable quick mode when manually selecting from legend
+    this.openSwimQuickMode = false;
+    
     const existingIndex = this.activeFilters.findIndex(
       f => f.type === 'category' && f.id === categoryId
     );
@@ -211,6 +306,7 @@ class PoolScheduleApp {
 
   clearFilter() {
     this.activeFilters = [];
+    this.openSwimQuickMode = false;
     this.updateFilterUI();
     this.updateLegendStates();
     this.updateDisplay();
@@ -230,6 +326,9 @@ class PoolScheduleApp {
       filterValue.textContent = '';
       this.elements.clearFilterBtn.classList.add('legend-sidebar__clear-btn--hidden');
     }
+    
+    // Update quick filter button states
+    this.updateQuickFilterButtons();
   }
 
   updateLegendStates() {
@@ -237,9 +336,9 @@ class PoolScheduleApp {
     const items = this.elements.legendGrid.querySelectorAll('.legend-item');
     
     if (this.activeFilters.length === 0) {
-      // No filter - reset all states
+      // No filter - reset all states and show all
       cards.forEach(card => {
-        card.classList.remove('legend-category-card--active', 'legend-category-card--dimmed');
+        card.classList.remove('legend-category-card--active', 'legend-category-card--dimmed', 'legend-category-card--hidden');
       });
       items.forEach(item => {
         item.classList.remove('legend-item--active', 'legend-item--dimmed');
@@ -259,7 +358,8 @@ class PoolScheduleApp {
     cards.forEach(card => {
       const isSelected = selectedCategoryIds.has(card.dataset.category);
       card.classList.toggle('legend-category-card--active', isSelected);
-      // Don't dim categories - only highlight selected ones
+      // Hide non-selected categories only when in quick mode (from toggle button)
+      card.classList.toggle('legend-category-card--hidden', this.openSwimQuickMode && !isSelected);
       card.classList.remove('legend-category-card--dimmed');
     });
     
@@ -349,6 +449,23 @@ class PoolScheduleApp {
           !this.elements.datePickerBtn.contains(e.target)) {
         this.closeDatePicker();
       }
+    });
+    
+    // Quick filter buttons
+    this.elements.quickFilterOpenSwim.addEventListener('click', () => {
+      this.selectOpenSwimFilter();
+      this.updatePoolLanes();
+    });
+    
+    this.elements.quickFilterShowAll.addEventListener('click', () => {
+      this.clearAllFilters();
+    });
+    
+    // Close overlay button
+    this.elements.closeOverlayBtn.addEventListener('click', () => {
+      this.closedOverlayDismissed = true;
+      this.elements.poolClosedOverlay.classList.remove('pool-closed-overlay--visible');
+      this.elements.floorplanWrapper.classList.remove('floorplan-wrapper--closed');
     });
   }
   
@@ -470,12 +587,22 @@ class PoolScheduleApp {
     slider.min = hours.open;
     slider.max = hours.close;
     
-    // Clamp current time to valid range
-    if (this.selectedTimeMinutes < hours.open) {
+    const today = this.formatDate(new Date());
+    const isViewingToday = this.selectedDate === today;
+    const currentRealTimeMinutes = this.getCurrentTimeMinutes();
+    
+    // If viewing today and it's after closing, set slider to closing time
+    if (isViewingToday && currentRealTimeMinutes >= hours.close) {
+      this.selectedTimeMinutes = hours.close;
+    }
+    // Clamp to valid range
+    else if (this.selectedTimeMinutes < hours.open) {
       this.selectedTimeMinutes = hours.open;
     } else if (this.selectedTimeMinutes > hours.close) {
       this.selectedTimeMinutes = hours.close;
     }
+    
+    slider.value = this.selectedTimeMinutes;
     
     // Update hour marks
     this.updateHourMarks(hours.open, hours.close);
@@ -535,17 +662,61 @@ class PoolScheduleApp {
   }
 
   updateDisplay() {
-    // Update time display
-    const timeStr = this.schedule.minutesToTimeString(this.selectedTimeMinutes);
-    const isLive = this.selectedTimeMinutes === this.getCurrentTimeMinutes() && 
-                   this.selectedDate === this.formatDate(new Date());
+    const today = this.formatDate(new Date());
+    const isViewingToday = this.selectedDate === today;
+    const currentRealTimeMinutes = this.getCurrentTimeMinutes();
+    const poolHours = this.schedule.getPoolHours(this.selectedDate);
+    
+    // Check if pool is CURRENTLY closed (real time check for today only)
+    const isCurrentlyClosed = isViewingToday && poolHours && (
+      currentRealTimeMinutes < poolHours.open || 
+      currentRealTimeMinutes >= poolHours.close
+    );
+    
+    // Reset dismissed flag when navigating away from today
+    if (!isViewingToday) {
+      this.closedOverlayDismissed = false;
+    }
+    
+    // Update time display - show current real time if after closing on today
+    let displayTimeMinutes = this.selectedTimeMinutes;
+    if (isViewingToday && poolHours && currentRealTimeMinutes >= poolHours.close) {
+      // After closing - show actual current time in badge
+      displayTimeMinutes = currentRealTimeMinutes;
+    }
+    const timeStr = this.schedule.minutesToTimeString(displayTimeMinutes);
     this.elements.timeDisplay.textContent = timeStr;
     
-    // Update live indicator
-    if (isLive) {
-      this.elements.liveIndicator.classList.add('time-now-btn__live--active');
-    } else {
+    // Determine if we should show the LIVE badge
+    const isLive = this.selectedTimeMinutes === currentRealTimeMinutes && 
+                   isViewingToday && !isCurrentlyClosed;
+    
+    // Update live/closed indicators and overlay
+    if (isCurrentlyClosed) {
+      // Pool is currently closed (today, after hours)
       this.elements.liveIndicator.classList.remove('time-now-btn__live--active');
+      this.elements.closedIndicator.classList.add('time-now-btn__closed--active');
+      
+      // Show overlay only if not dismissed
+      if (!this.closedOverlayDismissed) {
+        this.elements.poolClosedOverlay.classList.add('pool-closed-overlay--visible');
+        this.elements.floorplanWrapper.classList.add('floorplan-wrapper--closed');
+      }
+      
+      // Calculate next open time
+      this.updateNextOpenTime(poolHours, currentRealTimeMinutes);
+    } else {
+      // Pool is open or viewing a different day
+      this.elements.closedIndicator.classList.remove('time-now-btn__closed--active');
+      this.elements.poolClosedOverlay.classList.remove('pool-closed-overlay--visible');
+      this.elements.floorplanWrapper.classList.remove('floorplan-wrapper--closed');
+      
+      // Update live indicator
+      if (isLive) {
+        this.elements.liveIndicator.classList.add('time-now-btn__live--active');
+      } else {
+        this.elements.liveIndicator.classList.remove('time-now-btn__live--active');
+      }
     }
     
     // Update title
@@ -559,6 +730,22 @@ class PoolScheduleApp {
     
     // Update pool lanes
     this.updatePoolLanes();
+  }
+  
+  updateNextOpenTime(poolHours, currentTimeMinutes) {
+    if (!poolHours) return;
+    
+    const openTime = this.schedule.minutesToTimeString(poolHours.open);
+    const formattedOpenTime = this.formatTimeAMPM(openTime);
+    
+    // Check if we're before opening or after closing
+    if (currentTimeMinutes < poolHours.open) {
+      // Before opening today
+      this.elements.nextOpenTime.textContent = `Opens today at ${formattedOpenTime}`;
+    } else {
+      // After closing - opens tomorrow
+      this.elements.nextOpenTime.textContent = `Opens tomorrow at ${formattedOpenTime}`;
+    }
   }
 
   updatePoolLanes() {
@@ -599,9 +786,9 @@ class PoolScheduleApp {
     // Apply filter highlight
     if (this.activeFilters.length > 0) {
       if (this.isActivityMatchingFilter(activity.id)) {
-        // Matching activity - show full color with glow
+        // Matching activity - show full color with subtle glow
         laneEl.setAttribute('fill', activity.color);
-        laneEl.style.filter = 'brightness(1.2) drop-shadow(0 0 8px ' + activity.color + ')';
+        laneEl.style.filter = 'brightness(1.05) drop-shadow(0 0 4px ' + activity.color + ')';
       } else {
         // Non-matching activity - gray out completely
         laneEl.setAttribute('fill', '#4b5563');
@@ -645,12 +832,21 @@ class PoolScheduleApp {
       // Track if we need to add separator
       let addedSeparator = false;
       
+      // Check if any event is currently active at scrubber time (for end-of-day edge case)
+      const hasActiveEvent = laneSchedule.some(e => {
+        const start = this.schedule.timeToMinutes(e.start);
+        const end = this.schedule.timeToMinutes(e.end);
+        return scrubberTime >= start && scrubberTime < end;
+      });
+      
       this.elements.modalContent.innerHTML = laneSchedule.map((entry, index) => {
         const startMinutes = this.schedule.timeToMinutes(entry.start);
         const endMinutes = this.schedule.timeToMinutes(entry.end);
         
-        // Check timing relative to scrubber position (for NOW badge)
-        const isAtScrubber = scrubberTime >= startMinutes && scrubberTime < endMinutes;
+        // Check timing relative to scrubber position (for NOW/SELECTED badge)
+        // Include events that end exactly at scrubber time if no other event is active
+        const isAtScrubber = (scrubberTime >= startMinutes && scrubberTime < endMinutes) ||
+                            (!hasActiveEvent && scrubberTime === endMinutes);
         
         // Check timing relative to actual current time (for past/future styling)
         // Only apply real-time past styling when viewing today
