@@ -1024,46 +1024,39 @@ class PoolScheduleApp {
           const windows = this.mergeIntoAvailabilityWindows(slots);
           const uniqueId = `day-${dateStr.replace(/-/g, '')}`;
           
-          // Collapsed view - availability windows
+          // Group slots by pool for table view
+          const poolTable = this.groupSlotsByPool(slots);
+          
+          // Build table HTML
+          const tableHtml = poolTable.map(pool => `
+            <div class="pool-row">
+              <span class="pool-row__name">${pool.shortName}</span>
+              <span class="pool-row__times">${pool.times.map(t => `${this.formatTimeAMPM(t.start)} - ${this.formatTimeAMPM(t.end)}`).join(', ')}</span>
+            </div>
+          `).join('');
+          
           sessionsHtml = `
-            <div class="sessions-collapsed" id="${uniqueId}-collapsed">
+            <div class="sessions-collapsible" id="${uniqueId}">
               <div class="availability-windows">
                 ${windows.map(w => `
                   <button class="availability-window" data-toggle="${uniqueId}">
+                    <svg class="availability-window__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
                     <span class="availability-window__time">${this.formatTimeAMPM(w.start)} - ${this.formatTimeAMPM(w.end)}</span>
                     <span class="availability-window__count">${w.poolCount} pool${w.poolCount > 1 ? 's' : ''}</span>
                   </button>
                 `).join('')}
               </div>
-              <button class="sessions-toggle" data-toggle="${uniqueId}">
-                <span>Show all ${slots.length} sessions</span>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </button>
-            </div>
-            <div class="sessions-expanded" id="${uniqueId}-expanded" style="display: none;">
-              <div class="session-chips-grid">
-                ${slots.map(slot => {
-                  let chipClass = 'session-chip';
-                  if (slot.isCurrent) chipClass += ' session-chip--now';
-                  else if (slot.isNext) chipClass += ' session-chip--next';
-                  const sectionName = slot.section?.name || slot.slot.section;
-                  const shortSection = sectionName.replace(' Pool', '').replace(' (25 YARDS)', '').replace('DEEP WELL ', 'DW ');
-                  return `
-                    <div class="${chipClass}">
-                      <span class="session-chip__time">${this.formatTimeAMPM(slot.slot.start)} - ${this.formatTimeAMPM(slot.slot.end)}</span>
-                      <span class="session-chip__location">${shortSection}</span>
-                    </div>
-                  `;
-                }).join('')}
+              <div class="sessions-detail" id="${uniqueId}-detail" style="display: none;">
+                <div class="pool-table">
+                  <div class="pool-table__header">
+                    <span class="pool-table__col-pool">Pool</span>
+                    <span class="pool-table__col-times">Available Hours</span>
+                  </div>
+                  ${tableHtml}
+                </div>
               </div>
-              <button class="sessions-toggle sessions-toggle--collapse" data-toggle="${uniqueId}">
-                <span>Hide details</span>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="18 15 12 9 6 15"></polyline>
-                </svg>
-              </button>
             </div>
           `;
         } else {
@@ -1161,19 +1154,54 @@ class PoolScheduleApp {
   }
   
   /**
+   * Group slots by pool for table display
+   */
+  groupSlotsByPool(slots) {
+    const byPool = {};
+    
+    slots.forEach(slot => {
+      const sectionName = slot.section?.name || slot.slot.section;
+      const shortName = sectionName
+        .replace(' Pool', '')
+        .replace(' (25 YARDS)', '')
+        .replace('DEEP WELL ', 'DW ');
+      
+      if (!byPool[sectionName]) {
+        byPool[sectionName] = {
+          name: sectionName,
+          shortName: shortName,
+          times: []
+        };
+      }
+      
+      byPool[sectionName].times.push({
+        start: slot.slot.start,
+        end: slot.slot.end,
+        startMinutes: slot.startMinutes
+      });
+    });
+    
+    // Sort times within each pool and return as array
+    return Object.values(byPool).map(pool => {
+      pool.times.sort((a, b) => a.startMinutes - b.startMinutes);
+      return pool;
+    }).sort((a, b) => a.name.localeCompare(b.name));
+  }
+  
+  /**
    * Setup click handlers for session expand/collapse toggles
    */
   setupSessionToggles() {
     document.querySelectorAll('[data-toggle]').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const uniqueId = btn.dataset.toggle;
-        const collapsed = document.getElementById(`${uniqueId}-collapsed`);
-        const expanded = document.getElementById(`${uniqueId}-expanded`);
+        const container = document.getElementById(uniqueId);
+        const detail = document.getElementById(`${uniqueId}-detail`);
         
-        if (collapsed && expanded) {
-          const isExpanded = expanded.style.display !== 'none';
-          collapsed.style.display = isExpanded ? 'flex' : 'none';
-          expanded.style.display = isExpanded ? 'none' : 'block';
+        if (container && detail) {
+          const isExpanded = detail.style.display !== 'none';
+          detail.style.display = isExpanded ? 'none' : 'block';
+          container.classList.toggle('sessions-collapsible--expanded', !isExpanded);
         }
       });
     });
