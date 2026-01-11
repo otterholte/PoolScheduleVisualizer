@@ -436,9 +436,13 @@
         
         <!-- Activity Finder - Segmented Control Style -->
         <div class="activity-finder" id="activityFinder">
-          <h2 class="activity-finder__title">What are you looking for?</h2>
+          <div class="activity-finder__header">
+            <h2 class="activity-finder__title">Find Your Next Session</h2>
+            <p class="activity-finder__subtitle">Choose a category and activity to view upcoming times</p>
+          </div>
           
           <!-- Segmented Tab Bar -->
+          <label class="segment-label">Categories</label>
           <div class="segment-tabs" id="segmentTabs">
             <div class="segment-tabs__track">
               <!-- Tabs rendered by JS -->
@@ -447,6 +451,7 @@
           </div>
           
           <!-- Activities for selected category -->
+          <label class="segment-label">Activities</label>
           <div class="segment-content" id="segmentContent">
             <!-- Activities rendered by JS -->
           </div>
