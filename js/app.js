@@ -64,18 +64,14 @@ class PoolScheduleApp {
       weekGrid: document.getElementById('weekGrid'),
       weekGridHeader: document.getElementById('weekGridHeader'),
       weekGridBody: document.getElementById('weekGridBody'),
-      showMoreDays: document.getElementById('showMoreDays'),
-      poolFilter: document.getElementById('poolFilter'),
-      poolFilterInput: document.getElementById('poolFilterInput'),
-      poolFilterClear: document.getElementById('poolFilterClear'),
-      poolFilterChips: document.getElementById('poolFilterChips')
+      showMoreDays: document.getElementById('showMoreDays')
     };
     
     // Currently selected activity for list view
     this.selectedListActivity = null;
     
-    // Pool filter state
-    this.poolFilterText = '';
+    // Pool filter state (set of selected pool names)
+    this.selectedPools = new Set();
     
     // Currently selected category tab (first one by default)
     this.selectedCategoryTab = null;
@@ -787,16 +783,13 @@ class PoolScheduleApp {
     const currentTimeMinutes = this.getCurrentTimeMinutes();
     
     // Reset pool filter
-    this.poolFilterText = '';
-    if (this.elements.poolFilterInput) {
-      this.elements.poolFilterInput.value = '';
-    }
-    if (this.elements.poolFilter) {
-      this.elements.poolFilter.classList.remove('pool-filter--active');
-    }
+    this.selectedPools = new Set();
     
     // Collect all upcoming slots
     const allSlots = this.collectUpcomingSlots(activityId, 14); // Get 14 days worth
+    
+    // Store slots for filtering
+    this.currentSlots = allSlots;
     
     // Find the next session (current or upcoming)
     const nextSession = allSlots.find(s => s.isCurrent || s.isUpcoming);
@@ -804,111 +797,146 @@ class PoolScheduleApp {
     // Render Next Up section
     this.renderNextUpSection(nextSession, currentTimeMinutes);
     
-    // Render Week Grid
+    // Render Week Grid (includes filter button in header)
     this.renderWeekGrid(allSlots);
     
     // Setup show more button
     this.setupShowMoreButton(allSlots);
-    
-    // Setup pool filter
-    this.setupPoolFilter(allSlots);
   }
   
   /**
-   * Setup pool filter functionality
+   * Get unique pool names from slots
    */
-  setupPoolFilter(allSlots) {
-    const input = this.elements.poolFilterInput;
-    const clearBtn = this.elements.poolFilterClear;
-    const chipsContainer = this.elements.poolFilterChips;
-    const filterContainer = this.elements.poolFilter;
-    
-    if (!input || !chipsContainer) return;
-    
-    // Get unique pool names from all slots
-    const poolNames = new Set();
-    allSlots.forEach(slot => {
+  getUniquePoolNames(slots) {
+    const poolNames = new Map(); // shortName -> fullName
+    slots.forEach(slot => {
       const sectionName = slot.section?.name || slot.slot.section;
       const shortName = sectionName
         .replace(' Pool', '')
         .replace(' (25 YARDS)', '')
         .replace('DEEP WELL ', 'DW ');
-      poolNames.add(shortName);
+      if (!poolNames.has(shortName)) {
+        poolNames.set(shortName, sectionName);
+      }
     });
-    
-    // Render quick filter chips
-    chipsContainer.innerHTML = '';
-    const commonPools = ['Shallow', 'Main', 'Deep', 'Therapy', 'Instructional'];
-    const availablePools = commonPools.filter(p => 
-      [...poolNames].some(name => name.toLowerCase().includes(p.toLowerCase()))
-    );
-    
-    availablePools.forEach(pool => {
-      const chip = document.createElement('button');
-      chip.className = 'pool-filter__chip';
-      chip.type = 'button';
-      chip.textContent = pool;
-      chip.addEventListener('click', () => {
-        const isActive = chip.classList.contains('pool-filter__chip--active');
-        // Clear all active chips
-        chipsContainer.querySelectorAll('.pool-filter__chip').forEach(c => 
-          c.classList.remove('pool-filter__chip--active')
-        );
-        
-        if (isActive) {
-          // Deselect - clear filter
-          input.value = '';
-          this.applyPoolFilter('');
-        } else {
-          // Select this chip
-          chip.classList.add('pool-filter__chip--active');
-          input.value = pool;
-          this.applyPoolFilter(pool);
-        }
-      });
-      chipsContainer.appendChild(chip);
-    });
-    
-    // Input event listener
-    input.addEventListener('input', (e) => {
-      const value = e.target.value;
-      this.applyPoolFilter(value);
-      
-      // Clear chip selection when typing
-      chipsContainer.querySelectorAll('.pool-filter__chip').forEach(c => 
-        c.classList.remove('pool-filter__chip--active')
-      );
-    });
-    
-    // Clear button
-    if (clearBtn) {
-      clearBtn.addEventListener('click', () => {
-        input.value = '';
-        this.applyPoolFilter('');
-        chipsContainer.querySelectorAll('.pool-filter__chip').forEach(c => 
-          c.classList.remove('pool-filter__chip--active')
-        );
-      });
+    return poolNames;
+  }
+  
+  /**
+   * Toggle pool filter dropdown
+   */
+  togglePoolFilterDropdown() {
+    const dropdown = document.getElementById('poolFilterDropdown');
+    if (dropdown) {
+      dropdown.classList.toggle('pool-filter-dropdown--open');
     }
+  }
+  
+  /**
+   * Close pool filter dropdown
+   */
+  closePoolFilterDropdown() {
+    const dropdown = document.getElementById('poolFilterDropdown');
+    if (dropdown) {
+      dropdown.classList.remove('pool-filter-dropdown--open');
+    }
+  }
+  
+  /**
+   * Toggle a pool in the filter
+   */
+  togglePoolFilter(poolName) {
+    if (this.selectedPools.has(poolName)) {
+      this.selectedPools.delete(poolName);
+    } else {
+      this.selectedPools.add(poolName);
+    }
+    this.applyPoolFilter();
+    this.updatePoolFilterUI();
+  }
+  
+  /**
+   * Clear all pool filters
+   */
+  clearPoolFilters() {
+    this.selectedPools.clear();
+    this.applyPoolFilter();
+    this.updatePoolFilterUI();
+  }
+  
+  /**
+   * Update pool filter UI (button and dropdown)
+   */
+  updatePoolFilterUI() {
+    const btn = document.getElementById('poolFilterBtn');
+    const countBadge = document.getElementById('poolFilterCount');
+    
+    if (btn) {
+      btn.classList.toggle('pool-filter-btn--active', this.selectedPools.size > 0);
+    }
+    if (countBadge) {
+      if (this.selectedPools.size > 0) {
+        countBadge.textContent = this.selectedPools.size;
+        countBadge.style.display = 'inline';
+      } else {
+        countBadge.style.display = 'none';
+      }
+    }
+    
+    // Update checkboxes
+    document.querySelectorAll('.pool-filter-option').forEach(opt => {
+      const poolName = opt.dataset.pool;
+      opt.classList.toggle('pool-filter-option--selected', this.selectedPools.has(poolName));
+    });
   }
   
   /**
    * Apply pool filter to all pool rows
    */
-  applyPoolFilter(filterText) {
-    this.poolFilterText = filterText.toLowerCase().trim();
-    const filterContainer = this.elements.poolFilter;
+  applyPoolFilter() {
+    document.querySelectorAll('.pool-row').forEach(row => {
+      const poolName = row.dataset.pool || '';
+      const matches = this.selectedPools.size === 0 || this.selectedPools.has(poolName);
+      row.classList.toggle('pool-row--hidden', !matches);
+    });
+  }
+  
+  /**
+   * Setup pool filter event listeners
+   */
+  setupPoolFilterListeners() {
+    const btn = document.getElementById('poolFilterBtn');
+    const dropdown = document.getElementById('poolFilterDropdown');
+    const clearBtn = document.getElementById('poolFilterClear');
     
-    // Toggle active state for clear button visibility
-    if (filterContainer) {
-      filterContainer.classList.toggle('pool-filter--active', this.poolFilterText.length > 0);
+    if (btn) {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.togglePoolFilterDropdown();
+      });
     }
     
-    // Filter all pool rows
-    document.querySelectorAll('.pool-row').forEach(row => {
-      const poolName = row.querySelector('.pool-row__name')?.textContent?.toLowerCase() || '';
-      const matches = this.poolFilterText === '' || poolName.includes(this.poolFilterText);
-      row.classList.toggle('pool-row--hidden', !matches);
+    if (clearBtn) {
+      clearBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.clearPoolFilters();
+      });
+    }
+    
+    // Pool options
+    document.querySelectorAll('.pool-filter-option').forEach(opt => {
+      opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const poolName = opt.dataset.pool;
+        this.togglePoolFilter(poolName);
+      });
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (dropdown && !dropdown.contains(e.target) && e.target !== btn) {
+        this.closePoolFilterDropdown();
+      }
     });
   }
   
@@ -1108,7 +1136,43 @@ class PoolScheduleApp {
     const startStr = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const endStr = endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     
-    header.innerHTML = `<span class="week-grid__title">Schedule: ${startStr} - ${endStr}</span>`;
+    // Get unique pools for filter
+    const poolNames = this.getUniquePoolNames(allSlots);
+    const poolOptionsHtml = [...poolNames.keys()].sort().map(shortName => `
+      <button class="pool-filter-option" type="button" data-pool="${shortName}">
+        <span class="pool-filter-option__check">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </span>
+        <span>${shortName}</span>
+      </button>
+    `).join('');
+    
+    header.innerHTML = `
+      <span class="week-grid__title">Schedule: ${startStr} - ${endStr}</span>
+      <div style="position: relative;">
+        <button class="pool-filter-btn" id="poolFilterBtn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+          </svg>
+          <span>Pools</span>
+          <span class="pool-filter-btn__count" id="poolFilterCount" style="display: none;">0</span>
+        </button>
+        <div class="pool-filter-dropdown" id="poolFilterDropdown">
+          <div class="pool-filter-dropdown__header">
+            <span class="pool-filter-dropdown__title">Filter by Pool</span>
+            <button class="pool-filter-dropdown__clear" type="button" id="poolFilterClear">Clear all</button>
+          </div>
+          <div class="pool-filter-dropdown__list">
+            ${poolOptionsHtml}
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Setup filter event listeners
+    this.setupPoolFilterListeners();
     
     // Render body
     body.innerHTML = '';
@@ -1146,7 +1210,7 @@ class PoolScheduleApp {
           
           // Build table HTML
           const tableHtml = poolTable.map(pool => `
-            <div class="pool-row">
+            <div class="pool-row" data-pool="${pool.shortName}">
               <span class="pool-row__name">${pool.shortName}</span>
               <span class="pool-row__times">${pool.times.map(t => `${this.formatTimeAMPM(t.start)} - ${this.formatTimeAMPM(t.end)}`).join(', ')}</span>
             </div>

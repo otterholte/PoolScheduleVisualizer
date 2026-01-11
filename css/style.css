@@ -2303,104 +2303,154 @@ body::before {
   display: none;
 }
 
-/* Pool Filter */
-.pool-filter {
-  margin-bottom: 20px;
-}
-
-.pool-filter__search {
+/* Pool Filter Dropdown */
+.pool-filter-btn {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
+  gap: 6px;
+  padding: 6px 12px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius);
-  transition: border-color var(--transition-fast);
-}
-
-.pool-filter__search:focus-within {
-  border-color: var(--accent-cyan);
-}
-
-.pool-filter__icon {
-  width: 18px;
-  height: 18px;
-  color: var(--text-muted);
-  flex-shrink: 0;
-}
-
-.pool-filter__input {
-  flex: 1;
-  background: transparent;
-  border: none;
   font-family: var(--font-sans);
-  font-size: 0.85rem;
-  color: var(--text-primary);
-  outline: none;
-}
-
-.pool-filter__input::placeholder {
-  color: var(--text-muted);
-}
-
-.pool-filter__clear {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  border-radius: 50%;
-  transition: all var(--transition-fast);
-}
-
-.pool-filter__clear:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
-.pool-filter__clear svg {
-  width: 14px;
-  height: 14px;
-}
-
-.pool-filter--active .pool-filter__clear {
-  display: flex;
-}
-
-.pool-filter__chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
-}
-
-.pool-filter__chip {
-  padding: 5px 12px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
-  border-radius: 20px;
-  font-family: var(--font-sans);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--text-secondary);
   cursor: pointer;
   transition: all var(--transition-fast);
+  position: relative;
 }
 
-.pool-filter__chip:hover {
+.pool-filter-btn:hover {
   border-color: var(--border-light);
   color: var(--text-primary);
 }
 
-.pool-filter__chip--active {
-  background: rgba(6, 182, 212, 0.15);
+.pool-filter-btn--active {
+  background: rgba(6, 182, 212, 0.1);
   border-color: rgba(6, 182, 212, 0.3);
   color: var(--accent-cyan);
+}
+
+.pool-filter-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.pool-filter-btn__count {
+  padding: 1px 6px;
+  background: var(--accent-cyan);
+  color: var(--bg-primary);
+  border-radius: 10px;
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+
+.pool-filter-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  min-width: 200px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  display: none;
+}
+
+.pool-filter-dropdown--open {
+  display: block;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.pool-filter-dropdown__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.pool-filter-dropdown__title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.pool-filter-dropdown__clear {
+  font-size: 0.7rem;
+  color: var(--accent-cyan);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.pool-filter-dropdown__clear:hover {
+  text-decoration: underline;
+}
+
+.pool-filter-dropdown__list {
+  padding: 8px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.pool-filter-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: left;
+}
+
+.pool-filter-option:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.pool-filter-option__check {
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--border-light);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.pool-filter-option__check svg {
+  width: 12px;
+  height: 12px;
+  opacity: 0;
+  color: white;
+}
+
+.pool-filter-option--selected .pool-filter-option__check {
+  background: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+}
+
+.pool-filter-option--selected .pool-filter-option__check svg {
+  opacity: 1;
+}
+
+.pool-filter-option--selected {
+  color: var(--text-primary);
 }
 
 .pool-row__name {
