@@ -928,17 +928,62 @@ class PoolScheduleApp {
       const windows = this.mergeIntoAvailabilityWindows(filteredSlots);
       const uniqueId = `day-${dateStr.replace(/-/g, '')}`;
       
-      // Update the windows HTML
-      windowsContainer.innerHTML = this.renderAvailabilityWindowButtons(windows, uniqueId);
+      // Build HTML for each window (same logic as initial render)
+      const windowsHtml = windows.map((w, windowIdx) => {
+        if (w.isGrouped) {
+          const windowId = `${uniqueId}-w${windowIdx}`;
+          const poolTable = this.groupSlotsByPool(w.slots);
+          const tableHtml = poolTable.map(pool => `
+            <div class="pool-row" data-pool="${pool.shortName}">
+              <span class="pool-row__name">${pool.shortName}</span>
+              <span class="pool-row__times">${pool.times.map(t => `${this.formatTimeAMPM(t.start)} - ${this.formatTimeAMPM(t.end)}`).join(', ')}</span>
+            </div>
+          `).join('');
+          
+          return `
+            <div class="availability-window-group" id="${windowId}">
+              <button class="availability-window" data-toggle="${windowId}">
+                <svg class="availability-window__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+                <span class="availability-window__time">${this.formatTimeAMPM(w.start)} - ${this.formatTimeAMPM(w.end)}</span>
+                <span class="availability-window__count">${w.poolCount} pool${w.poolCount > 1 ? 's' : ''}</span>
+              </button>
+              <div class="availability-window-detail" id="${windowId}-detail" style="display: none;">
+                <div class="pool-table">
+                  <div class="pool-table__header">
+                    <span class="pool-table__col-pool">Pool</span>
+                    <span class="pool-table__col-times">Available Hours</span>
+                  </div>
+                  ${tableHtml}
+                </div>
+              </div>
+            </div>
+          `;
+        } else {
+          const slot = w.slots[0];
+          const shortName = slot.shortName || slot.slot.section;
+          return `
+            <div class="session-chip session-chip--individual">
+              <span class="session-chip__time">${this.formatTimeAMPM(w.start)} - ${this.formatTimeAMPM(w.end)}</span>
+              <span class="session-chip__location">${shortName}</span>
+            </div>
+          `;
+        }
+      }).join('');
       
-      // Re-attach click handlers
+      windowsContainer.innerHTML = windowsHtml;
+      
+      // Re-attach click handlers for grouped windows
       windowsContainer.querySelectorAll('[data-toggle]').forEach(btn => {
         btn.addEventListener('click', () => {
-          const detail = document.getElementById(`${uniqueId}-detail`);
-          if (detail) {
+          const windowId = btn.dataset.toggle;
+          const windowGroup = document.getElementById(windowId);
+          const detail = document.getElementById(`${windowId}-detail`);
+          if (windowGroup && detail) {
             const isExpanded = detail.style.display !== 'none';
             detail.style.display = isExpanded ? 'none' : 'block';
-            container.classList.toggle('sessions-collapsible--expanded', !isExpanded);
+            windowGroup.classList.toggle('availability-window-group--expanded', !isExpanded);
           }
         });
       });
@@ -1262,30 +1307,56 @@ class PoolScheduleApp {
           const windows = this.mergeIntoAvailabilityWindows(enrichedSlots);
           const uniqueId = `day-${dateStr.replace(/-/g, '')}`;
           
-          // Group slots by pool for table view
-          const poolTable = this.groupSlotsByPool(enrichedSlots);
-          
-          // Build table HTML
-          const tableHtml = poolTable.map(pool => `
-            <div class="pool-row" data-pool="${pool.shortName}">
-              <span class="pool-row__name">${pool.shortName}</span>
-              <span class="pool-row__times">${pool.times.map(t => `${this.formatTimeAMPM(t.start)} - ${this.formatTimeAMPM(t.end)}`).join(', ')}</span>
-            </div>
-          `).join('');
+          // Build HTML for each window
+          const windowsHtml = windows.map((w, windowIdx) => {
+            if (w.isGrouped) {
+              // Grouped window - show button with expandable table
+              const windowId = `${uniqueId}-w${windowIdx}`;
+              const poolTable = this.groupSlotsByPool(w.slots);
+              const tableHtml = poolTable.map(pool => `
+                <div class="pool-row" data-pool="${pool.shortName}">
+                  <span class="pool-row__name">${pool.shortName}</span>
+                  <span class="pool-row__times">${pool.times.map(t => `${this.formatTimeAMPM(t.start)} - ${this.formatTimeAMPM(t.end)}`).join(', ')}</span>
+                </div>
+              `).join('');
+              
+              return `
+                <div class="availability-window-group" id="${windowId}">
+                  <button class="availability-window" data-toggle="${windowId}">
+                    <svg class="availability-window__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                    <span class="availability-window__time">${this.formatTimeAMPM(w.start)} - ${this.formatTimeAMPM(w.end)}</span>
+                    <span class="availability-window__count">${w.poolCount} pool${w.poolCount > 1 ? 's' : ''}</span>
+                  </button>
+                  <div class="availability-window-detail" id="${windowId}-detail" style="display: none;">
+                    <div class="pool-table">
+                      <div class="pool-table__header">
+                        <span class="pool-table__col-pool">Pool</span>
+                        <span class="pool-table__col-times">Available Hours</span>
+                      </div>
+                      ${tableHtml}
+                    </div>
+                  </div>
+                </div>
+              `;
+            } else {
+              // Individual slot - show as simple chip
+              const slot = w.slots[0];
+              const shortName = slot.shortName || slot.slot.section;
+              return `
+                <div class="session-chip session-chip--individual">
+                  <span class="session-chip__time">${this.formatTimeAMPM(w.start)} - ${this.formatTimeAMPM(w.end)}</span>
+                  <span class="session-chip__location">${shortName}</span>
+                </div>
+              `;
+            }
+          }).join('');
           
           sessionsHtml = `
             <div class="sessions-collapsible" id="${uniqueId}" data-date="${dateStr}">
               <div class="availability-windows" id="${uniqueId}-windows">
-                ${this.renderAvailabilityWindowButtons(windows, uniqueId)}
-              </div>
-              <div class="sessions-detail" id="${uniqueId}-detail" style="display: none;">
-                <div class="pool-table">
-                  <div class="pool-table__header">
-                    <span class="pool-table__col-pool">Pool</span>
-                    <span class="pool-table__col-times">Available Hours</span>
-                  </div>
-                  ${tableHtml}
-                </div>
+                ${windowsHtml}
               </div>
             </div>
           `;
@@ -1328,23 +1399,38 @@ class PoolScheduleApp {
   }
   
   /**
-   * Render availability window buttons as HTML
+   * Render availability windows - grouped windows get expand buttons, individual slots get chips
    */
   renderAvailabilityWindowButtons(windows, uniqueId) {
-    return windows.map(w => `
-      <button class="availability-window" data-toggle="${uniqueId}">
-        <svg class="availability-window__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
-        <span class="availability-window__time">${this.formatTimeAMPM(w.start)} - ${this.formatTimeAMPM(w.end)}</span>
-        <span class="availability-window__count">${w.poolCount} pool${w.poolCount > 1 ? 's' : ''}</span>
-      </button>
-    `).join('');
+    return windows.map(w => {
+      if (w.isGrouped) {
+        // Grouped window with 2+ overlapping slots - show expandable button
+        return `
+          <button class="availability-window" data-toggle="${uniqueId}">
+            <svg class="availability-window__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+            <span class="availability-window__time">${this.formatTimeAMPM(w.start)} - ${this.formatTimeAMPM(w.end)}</span>
+            <span class="availability-window__count">${w.poolCount} pool${w.poolCount > 1 ? 's' : ''}</span>
+          </button>
+        `;
+      } else {
+        // Individual slot with no overlap - show as simple chip
+        const slot = w.slots[0];
+        const shortName = slot.shortName || slot.slot.section;
+        return `
+          <div class="session-chip session-chip--individual">
+            <span class="session-chip__time">${this.formatTimeAMPM(w.start)} - ${this.formatTimeAMPM(w.end)}</span>
+            <span class="session-chip__location">${shortName}</span>
+          </div>
+        `;
+      }
+    }).join('');
   }
   
   /**
-   * Merge slots into continuous availability windows
-   * Only merges when sessions actually overlap or touch
+   * Merge overlapping slots into availability windows
+   * Returns both grouped windows (2+ overlapping slots) and individual slots (no overlap)
    */
   mergeIntoAvailabilityWindows(slots) {
     // Sort by start time
@@ -1361,28 +1447,34 @@ class PoolScheduleApp {
           endMinutes: slot.endMinutes,
           start: slot.slot.start,
           end: slot.slot.end,
-          pools: new Set([slot.slot.section])
+          pools: new Set([slot.slot.section]),
+          slots: [slot]  // Track all slots in this window
         };
       } else if (slot.startMinutes <= currentWindow.endMinutes) {
-        // Overlaps or touches current window - extend it
+        // Overlaps or touches current window - add to it
         if (slot.endMinutes > currentWindow.endMinutes) {
           currentWindow.endMinutes = slot.endMinutes;
           currentWindow.end = slot.slot.end;
         }
         currentWindow.pools.add(slot.slot.section);
+        currentWindow.slots.push(slot);
       } else {
-        // Gap or just touching - save current window and start new one
+        // Gap - save current window and start new one
         windows.push({
           start: currentWindow.start,
           end: currentWindow.end,
-          poolCount: currentWindow.pools.size
+          poolCount: currentWindow.pools.size,
+          slotCount: currentWindow.slots.length,
+          isGrouped: currentWindow.slots.length > 1,
+          slots: currentWindow.slots
         });
         currentWindow = {
           startMinutes: slot.startMinutes,
           endMinutes: slot.endMinutes,
           start: slot.slot.start,
           end: slot.slot.end,
-          pools: new Set([slot.slot.section])
+          pools: new Set([slot.slot.section]),
+          slots: [slot]
         };
       }
     });
@@ -1392,7 +1484,10 @@ class PoolScheduleApp {
       windows.push({
         start: currentWindow.start,
         end: currentWindow.end,
-        poolCount: currentWindow.pools.size
+        poolCount: currentWindow.pools.size,
+        slotCount: currentWindow.slots.length,
+        isGrouped: currentWindow.slots.length > 1,
+        slots: currentWindow.slots
       });
     }
     
@@ -1440,14 +1535,14 @@ class PoolScheduleApp {
   setupSessionToggles() {
     document.querySelectorAll('[data-toggle]').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const uniqueId = btn.dataset.toggle;
-        const container = document.getElementById(uniqueId);
-        const detail = document.getElementById(`${uniqueId}-detail`);
+        const windowId = btn.dataset.toggle;
+        const windowGroup = document.getElementById(windowId);
+        const detail = document.getElementById(`${windowId}-detail`);
         
-        if (container && detail) {
+        if (windowGroup && detail) {
           const isExpanded = detail.style.display !== 'none';
           detail.style.display = isExpanded ? 'none' : 'block';
-          container.classList.toggle('sessions-collapsible--expanded', !isExpanded);
+          windowGroup.classList.toggle('availability-window-group--expanded', !isExpanded);
         }
       });
     });
