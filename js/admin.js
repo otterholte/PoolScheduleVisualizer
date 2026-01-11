@@ -1148,6 +1148,7 @@ class AdminPanel {
   updateSelection(cell) {
     if (!this.isSelecting) return;
     this.selectionEnd = cell;
+    this.cancelGridCellTooltip(); // Keep tooltip hidden during drag
     this.updateSelectionHighlight();
   }
   
@@ -1527,6 +1528,12 @@ class AdminPanel {
   }
   
   startGridCellTooltip(e, cell) {
+    // Don't show normal tooltip while drag-selecting (selection tooltip is shown instead)
+    if (this.isSelecting) {
+      this.cancelGridCellTooltip();
+      return;
+    }
+    
     this.lastTooltipEvent = e;
     this.pendingTooltipCell = cell;
     
@@ -1535,7 +1542,7 @@ class AdminPanel {
     }
     
     this.tooltipTimer = setTimeout(() => {
-      if (this.pendingTooltipCell === cell) {
+      if (this.pendingTooltipCell === cell && !this.isSelecting) {
         this.showGridCellTooltip(this.lastTooltipEvent, cell);
       }
     }, 500);
