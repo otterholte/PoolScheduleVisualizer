@@ -140,13 +140,16 @@ class AdminPanel {
   }
 
   /**
-   * Populate activities dropdown
+   * Populate activities dropdown (sorted alphabetically)
    */
   populateActivities() {
     const activities = this.schedule.getActivities();
     const select = this.elements.entryActivity;
     
-    activities.forEach(activity => {
+    // Sort activities alphabetically by name
+    const sortedActivities = [...activities].sort((a, b) => a.name.localeCompare(b.name));
+    
+    sortedActivities.forEach(activity => {
       const option = document.createElement('option');
       option.value = activity.id;
       option.textContent = activity.name;
@@ -1207,6 +1210,13 @@ class AdminPanel {
     return `${displayHours}:${mins.toString().padStart(2, '0')} ${period}`;
   }
   
+  // Convert minutes to 24-hour format for JSON storage (e.g., "05:30")
+  minutesToTime24(minutes) {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+  }
+  
   showSelectionPanel(e) {
     const info = this.getSelectionInfo();
     if (!info) return;
@@ -1228,9 +1238,10 @@ class AdminPanel {
       return `<div class="grid-selection-panel__pool">${s.name} - ${laneStr}</div>`;
     }).join('');
     
-    // Build activity dropdown
+    // Build activity dropdown (sorted alphabetically)
     const activities = this.schedule.data.activities || [];
-    const activityOptions = activities.map(a => 
+    const sortedActivities = [...activities].sort((a, b) => a.name.localeCompare(b.name));
+    const activityOptions = sortedActivities.map(a => 
       `<option value="${a.id}">${a.name}</option>`
     ).join('');
     
@@ -1346,35 +1357,34 @@ class AdminPanel {
     
     const date = info.date;
     
-    // Create schedule entries for each section/lane combination
+    // Initialize date array if needed
+    if (!this.pendingSchedules[date]) {
+      this.pendingSchedules[date] = [];
+    }
+    
+    // Create schedule entries for each section (grouping lanes together)
     info.sections.forEach(section => {
-      section.lanes.forEach(lane => {
-        const entry = {
-          section: section.id,
-          lanes: [this.parseLaneId(lane)],
-          start: info.startTimeStr.replace(' ', ''),
-          end: info.endTimeStr.replace(' ', ''),
-          activity: activity.id
-        };
-        
-        // Add to pending schedules
-        if (!this.pendingSchedules[date]) {
-          this.pendingSchedules[date] = [];
-        }
-        
-        // Check for existing entry that might overlap
-        // For simplicity, just add the new entry (a proper implementation would merge/replace)
-        this.pendingSchedules[date].push(entry);
-      });
+      // Parse all lane IDs for this section
+      const laneIds = section.lanes.map(lane => this.parseLaneId(lane));
+      
+      const entry = {
+        section: section.id,
+        lanes: laneIds,
+        start: this.minutesToTime24(info.startTime),
+        end: this.minutesToTime24(info.endTime),
+        activity: activity.id
+      };
+      
+      this.pendingSchedules[date].push(entry);
     });
     
-    // Update schedule data and re-render
+    // Update schedule data so getLaneStatus sees the changes
     this.schedule.data.schedules = this.pendingSchedules;
     
     // Clear selection and close panel
     this.cancelSelection();
     
-    // Re-render grid
+    // Re-render grid and list views
     this.renderGridView();
     this.updatePreview();
     
