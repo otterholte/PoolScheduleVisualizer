@@ -6,6 +6,49 @@
   background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
 }
 
+/* Admin Navigation */
+.admin-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-nav__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.admin-nav__item svg {
+  width: 18px;
+  height: 18px;
+}
+
+.admin-nav__item:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.admin-nav__item--active {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.admin-nav__item--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .admin-badge {
   background: rgba(255, 255, 255, 0.2);
   color: white;
