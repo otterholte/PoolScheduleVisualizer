@@ -112,9 +112,15 @@ class ScheduleManager {
     const schedule = this.getScheduleForDate(dateStr);
     let lastEndingEvent = null;
     
+    // Normalize lane for comparison (handle both string and number)
+    const laneStr = String(lane);
+    const laneNum = parseInt(lane, 10);
+    
     for (const entry of schedule) {
       if (entry.section !== sectionId) continue;
-      if (!entry.lanes.includes(lane)) continue;
+      // Check lane match with type coercion
+      const hasLane = entry.lanes.some(l => String(l) === laneStr || l === laneNum);
+      if (!hasLane) continue;
       
       const startMinutes = this.timeToMinutes(entry.start);
       const endMinutes = this.timeToMinutes(entry.end);
@@ -155,9 +161,15 @@ class ScheduleManager {
     const schedule = this.getScheduleForDate(dateStr);
     const laneSchedule = [];
     
+    // Normalize lane for comparison (handle both string and number)
+    const laneStr = String(lane);
+    const laneNum = parseInt(lane, 10);
+    
     for (const entry of schedule) {
       if (entry.section !== sectionId) continue;
-      if (!entry.lanes.includes(lane)) continue;
+      // Check lane match with type coercion
+      const hasLane = entry.lanes.some(l => String(l) === laneStr || l === laneNum);
+      if (!hasLane) continue;
       
       laneSchedule.push({
         ...entry,
