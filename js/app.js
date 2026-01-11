@@ -820,7 +820,7 @@ class PoolScheduleApp {
   }
   
   /**
-   * Render inline results for an activity
+   * Render inline results for an activity (uses same logic as renderWeekGrid)
    */
   renderInlineResults(activityId, container) {
     const activity = this.schedule.getActivity(activityId);
@@ -829,72 +829,422 @@ class PoolScheduleApp {
     this.selectedListActivity = activity;
     this.daysToShow = 7;
     
+    // Reset pool filter for new activity
+    this.selectedPools = new Set();
+    
     // Get upcoming slots
     const allSlots = this.collectUpcomingSlots(activityId, this.daysToShow);
     
-    // Build inline HTML
+    // Store slots for filtering
+    this.currentSlots = allSlots;
+    
+    // Get unique pool names for filter
+    const poolNames = this.getUniquePoolNames(allSlots);
+    const poolOptionsHtml = Array.from(poolNames.keys()).sort().map(shortName => `
+      <button type="button" class="pool-filter-option" data-pool="${shortName}">
+        ${shortName}
+      </button>
+    `).join('');
+    
+    // Build inline HTML with filter
     let html = `
       <div class="inline-results__separator"></div>
       <div class="inline-results__content">
+        <div class="inline-results__header">
+          <span class="inline-results__title">Upcoming Schedule</span>
+          <div class="pool-filter">
+            <button type="button" class="pool-filter-btn" id="inlinePoolFilterBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+              </svg>
+              <span>Pools</span>
+              <span class="pool-filter-btn__count" id="inlinePoolFilterCount" style="display: none;">0</span>
+            </button>
+            <div class="pool-filter-dropdown" id="inlinePoolFilterDropdown">
+              <div class="pool-filter-dropdown__header">
+                <span class="pool-filter-dropdown__title">Filter by Pool</span>
+                <button class="pool-filter-dropdown__clear" type="button" id="inlinePoolFilterClear">Clear all</button>
+              </div>
+              <div class="pool-filter-dropdown__list">
+                ${poolOptionsHtml}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="inline-results__body" id="inlineResultsBody">
     `;
     
     if (allSlots.length === 0) {
       html += `<p class="inline-results__empty">No upcoming sessions in the next ${this.daysToShow} days</p>`;
     } else {
-      // Group by date
-      const byDate = {};
-      allSlots.forEach(slot => {
-        if (!byDate[slot.date]) byDate[slot.date] = { slots: [] };
-        byDate[slot.date].slots.push(slot);
-      });
+      html += this.renderInlineWeekGrid(allSlots);
+    }
+    
+    html += `
+        </div>
+      </div>
+    `;
+    
+    container.innerHTML = html;
+    
+    // Setup filter listeners for inline results
+    this.setupInlineFilterListeners();
+  }
+  
+  /**
+   * Render the week grid HTML for inline results (same logic as renderWeekGrid)
+   */
+  renderInlineWeekGrid(allSlots) {
+    // Group by date
+    const byDate = {};
+    allSlots.forEach(slot => {
+      if (!byDate[slot.date]) byDate[slot.date] = { slots: [] };
+      byDate[slot.date].slots.push(slot);
+    });
+    
+    const datesToShow = Object.keys(byDate).sort().slice(0, this.daysToShow);
+    let html = '';
+    
+    datesToShow.forEach((dateStr, idx) => {
+      const dayData = byDate[dateStr];
+      const dateObj = new Date(dateStr + 'T12:00:00');
+      const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+      const dateDisplay = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       
-      // Render each day
-      Object.keys(byDate).forEach(dateStr => {
-        const dayData = byDate[dateStr];
-        const dateObj = new Date(dateStr + 'T12:00:00');
-        const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
-        const dateDisplay = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        const today = this.formatDate(new Date());
-        const tomorrow = this.formatDate(new Date(Date.now() + 86400000));
+      // Day badge
+      let badgeHtml = '';
+      if (idx === 0) {
+        badgeHtml = '<span class="week-day__badge">Today</span>';
+      } else if (idx === 1) {
+        badgeHtml = '<span class="week-day__badge" style="background: rgba(59, 130, 246, 0.15); color: var(--accent-blue);">Tomorrow</span>';
+      }
+      
+      // Sessions HTML
+      let sessionsHtml = '';
+      if (dayData && dayData.slots.length > 0) {
+        const slots = dayData.slots;
+        const shouldCollapse = slots.length >= 4;
         
-        let badge = '';
-        if (dateStr === today) badge = '<span class="inline-day__badge">Today</span>';
-        else if (dateStr === tomorrow) badge = '<span class="inline-day__badge inline-day__badge--tomorrow">Tomorrow</span>';
-        
-        html += `
-          <div class="inline-day">
-            <div class="inline-day__header">
-              <span class="inline-day__name">${dayName}</span>
-              <span class="inline-day__date">${dateDisplay}</span>
-              ${badge}
-            </div>
-            <div class="inline-day__slots">
-        `;
-        
-        // Render slots
-        dayData.slots.forEach(slot => {
-          const shortName = (slot.section?.name || slot.slot.section)
+        // Enrich slots with shortName for filtering
+        const enrichedSlots = slots.map(slot => {
+          const sectionName = slot.section?.name || slot.slot.section;
+          const shortName = sectionName
             .replace(' Pool', '')
             .replace(' (25 YARDS)', '')
             .replace('DEEP WELL ', 'DW ');
-          
-          html += `
-            <div class="inline-slot">
-              <span class="inline-slot__time">${this.formatTimeAMPM(slot.slot.start)} - ${this.formatTimeAMPM(slot.slot.end)}</span>
-              <span class="inline-slot__location">${shortName}</span>
-            </div>
-          `;
+          return { ...slot, shortName };
         });
         
-        html += `
+        // Store slots for this day (for filter recalculation)
+        this.slotsByDate[dateStr] = enrichedSlots;
+        
+        if (shouldCollapse) {
+          // Merge overlapping times into availability windows
+          const windows = this.mergeIntoAvailabilityWindows(enrichedSlots);
+          const uniqueId = `inline-day-${dateStr.replace(/-/g, '')}`;
+          
+          // Build HTML for each window - buttons first, then details
+          let buttonsHtml = '';
+          let detailsHtml = '';
+          
+          windows.forEach((w, windowIdx) => {
+            if (w.isGrouped) {
+              // Grouped window - button and detail are siblings
+              const windowId = `${uniqueId}-w${windowIdx}`;
+              const poolTable = this.groupSlotsByPool(w.slots);
+              const tableHtml = poolTable.map(pool => `
+                <div class="pool-row" data-pool="${pool.shortName}">
+                  <span class="pool-row__name">${pool.shortName}</span>
+                  <span class="pool-row__times">${pool.times.map(t => `${this.formatTimeAMPM(t.start)} - ${this.formatTimeAMPM(t.end)}`).join(', ')}</span>
+                </div>
+              `).join('');
+              
+              buttonsHtml += `
+                <div class="availability-window-group" id="${windowId}">
+                  <button class="availability-window" data-toggle="${windowId}">
+                    <svg class="availability-window__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                    <span class="availability-window__time">${this.formatTimeAMPM(w.start)} - ${this.formatTimeAMPM(w.end)}</span>
+                    <span class="availability-window__count">${w.poolCount} pool${w.poolCount > 1 ? 's' : ''}</span>
+                  </button>
+                </div>
+              `;
+              
+              detailsHtml += `
+                <div class="availability-window-detail" id="${windowId}-detail" data-group="${windowId}" style="display: none;">
+                  <div class="pool-table">
+                    <div class="pool-table__header">
+                      <span class="pool-table__col-pool">Pool</span>
+                      <span class="pool-table__col-times">Available Hours</span>
+                    </div>
+                    ${tableHtml}
+                  </div>
+                </div>
+              `;
+            } else {
+              // Individual slot - show as simple chip
+              const slot = w.slots[0];
+              const shortName = slot.shortName || slot.slot.section;
+              buttonsHtml += `
+                <div class="session-chip session-chip--individual">
+                  <span class="session-chip__time">${this.formatTimeAMPM(w.start)} - ${this.formatTimeAMPM(w.end)}</span>
+                  <span class="session-chip__location">${shortName}</span>
+                </div>
+              `;
+            }
+          });
+          
+          sessionsHtml = `
+            <div class="sessions-collapsible" id="${uniqueId}" data-date="${dateStr}">
+              <div class="availability-windows" id="${uniqueId}-windows">
+                ${buttonsHtml}${detailsHtml}
+              </div>
             </div>
+          `;
+        } else {
+          // Normal view for fewer sessions - show simple chips
+          const chipsHtml = enrichedSlots.map(slot => `
+            <div class="session-chip session-chip--individual">
+              <span class="session-chip__time">${this.formatTimeAMPM(slot.slot.start)} - ${this.formatTimeAMPM(slot.slot.end)}</span>
+              <span class="session-chip__location">${slot.shortName}</span>
+            </div>
+          `).join('');
+          
+          sessionsHtml = `<div class="availability-windows">${chipsHtml}</div>`;
+        }
+      } else {
+        sessionsHtml = '<p class="inline-results__empty">No sessions</p>';
+      }
+      
+      html += `
+        <div class="week-day">
+          <div class="week-day__label">
+            <span class="week-day__name">${dayName}</span>
+            <span class="week-day__date">${dateDisplay}</span>
+            ${badgeHtml}
           </div>
-        `;
+          <div class="week-day__sessions">
+            ${sessionsHtml}
+          </div>
+        </div>
+      `;
+    });
+    
+    return html;
+  }
+  
+  /**
+   * Setup filter listeners for inline results
+   */
+  setupInlineFilterListeners() {
+    const btn = document.getElementById('inlinePoolFilterBtn');
+    const dropdown = document.getElementById('inlinePoolFilterDropdown');
+    const clearBtn = document.getElementById('inlinePoolFilterClear');
+    
+    if (btn) {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown?.classList.toggle('pool-filter-dropdown--open');
       });
     }
     
-    html += '</div>';
-    container.innerHTML = html;
+    if (clearBtn) {
+      clearBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.selectedPools.clear();
+        this.applyInlinePoolFilter();
+        this.updateInlinePoolFilterUI();
+      });
+    }
+    
+    // Pool option clicks
+    document.querySelectorAll('#inlinePoolFilterDropdown .pool-filter-option').forEach(opt => {
+      opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const poolName = opt.dataset.pool;
+        if (this.selectedPools.has(poolName)) {
+          this.selectedPools.delete(poolName);
+        } else {
+          this.selectedPools.add(poolName);
+        }
+        this.applyInlinePoolFilter();
+        this.updateInlinePoolFilterUI();
+      });
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!dropdown?.contains(e.target) && e.target !== btn) {
+        dropdown?.classList.remove('pool-filter-dropdown--open');
+      }
+    });
+    
+    // Setup toggle handlers for grouped windows
+    document.querySelectorAll('.activity-inline-results [data-toggle]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const windowId = btn.dataset.toggle;
+        const windowGroup = document.getElementById(windowId);
+        const detail = document.getElementById(`${windowId}-detail`);
+        
+        if (windowGroup && detail) {
+          const isExpanded = detail.style.display === 'block';
+          
+          // Accordion: collapse all other expanded groups first
+          if (!isExpanded) {
+            document.querySelectorAll('.activity-inline-results .availability-window-group--expanded').forEach(group => {
+              group.classList.remove('availability-window-group--expanded');
+            });
+            document.querySelectorAll('.activity-inline-results .availability-window-detail').forEach(d => {
+              d.style.display = 'none';
+            });
+          }
+          
+          detail.style.display = isExpanded ? 'none' : 'block';
+          windowGroup.classList.toggle('availability-window-group--expanded', !isExpanded);
+        }
+      });
+    });
+  }
+  
+  /**
+   * Apply pool filter to inline results
+   */
+  applyInlinePoolFilter() {
+    // Filter table rows
+    document.querySelectorAll('.activity-inline-results .pool-row').forEach(row => {
+      const poolName = row.dataset.pool || '';
+      const matches = this.selectedPools.size === 0 || this.selectedPools.has(poolName);
+      row.classList.toggle('pool-row--hidden', !matches);
+    });
+    
+    // Recalculate availability windows for each day
+    document.querySelectorAll('.activity-inline-results .sessions-collapsible').forEach(container => {
+      const dateStr = container.dataset.date;
+      const windowsContainer = container.querySelector('.availability-windows');
+      
+      if (!dateStr || !windowsContainer || !this.slotsByDate[dateStr]) return;
+      
+      // Get slots for this day
+      const allSlots = this.slotsByDate[dateStr];
+      
+      // Filter slots based on selected pools
+      const filteredSlots = this.selectedPools.size === 0 
+        ? allSlots 
+        : allSlots.filter(slot => this.selectedPools.has(slot.shortName));
+      
+      if (filteredSlots.length === 0) {
+        windowsContainer.innerHTML = '<span class="no-matching-pools">No matching pools</span>';
+        return;
+      }
+      
+      // Recalculate windows from filtered slots
+      const windows = this.mergeIntoAvailabilityWindows(filteredSlots);
+      const uniqueId = container.id;
+      
+      // Build HTML - buttons first, then details as siblings
+      let buttonsHtml = '';
+      let detailsHtml = '';
+      
+      windows.forEach((w, windowIdx) => {
+        if (w.isGrouped) {
+          const windowId = `${uniqueId}-w${windowIdx}`;
+          const poolTable = this.groupSlotsByPool(w.slots);
+          const tableHtml = poolTable.map(pool => `
+            <div class="pool-row" data-pool="${pool.shortName}">
+              <span class="pool-row__name">${pool.shortName}</span>
+              <span class="pool-row__times">${pool.times.map(t => `${this.formatTimeAMPM(t.start)} - ${this.formatTimeAMPM(t.end)}`).join(', ')}</span>
+            </div>
+          `).join('');
+          
+          buttonsHtml += `
+            <div class="availability-window-group" id="${windowId}">
+              <button class="availability-window" data-toggle="${windowId}">
+                <svg class="availability-window__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+                <span class="availability-window__time">${this.formatTimeAMPM(w.start)} - ${this.formatTimeAMPM(w.end)}</span>
+                <span class="availability-window__count">${w.poolCount} pool${w.poolCount > 1 ? 's' : ''}</span>
+              </button>
+            </div>
+          `;
+          
+          detailsHtml += `
+            <div class="availability-window-detail" id="${windowId}-detail" data-group="${windowId}" style="display: none;">
+              <div class="pool-table">
+                <div class="pool-table__header">
+                  <span class="pool-table__col-pool">Pool</span>
+                  <span class="pool-table__col-times">Available Hours</span>
+                </div>
+                ${tableHtml}
+              </div>
+            </div>
+          `;
+        } else {
+          const slot = w.slots[0];
+          const shortName = slot.shortName || slot.slot.section;
+          buttonsHtml += `
+            <div class="session-chip session-chip--individual">
+              <span class="session-chip__time">${this.formatTimeAMPM(w.start)} - ${this.formatTimeAMPM(w.end)}</span>
+              <span class="session-chip__location">${shortName}</span>
+            </div>
+          `;
+        }
+      });
+      
+      windowsContainer.innerHTML = buttonsHtml + detailsHtml;
+      
+      // Re-attach click handlers for grouped windows
+      windowsContainer.querySelectorAll('[data-toggle]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const windowId = btn.dataset.toggle;
+          const windowGroup = document.getElementById(windowId);
+          const detail = document.getElementById(`${windowId}-detail`);
+          if (windowGroup && detail) {
+            const isExpanded = detail.style.display === 'block';
+            
+            // Accordion: collapse all other expanded groups
+            if (!isExpanded) {
+              document.querySelectorAll('.activity-inline-results .availability-window-group--expanded').forEach(group => {
+                group.classList.remove('availability-window-group--expanded');
+              });
+              document.querySelectorAll('.activity-inline-results .availability-window-detail').forEach(d => {
+                d.style.display = 'none';
+              });
+            }
+            
+            detail.style.display = isExpanded ? 'none' : 'block';
+            windowGroup.classList.toggle('availability-window-group--expanded', !isExpanded);
+          }
+        });
+      });
+    });
+  }
+  
+  /**
+   * Update inline pool filter UI
+   */
+  updateInlinePoolFilterUI() {
+    const btn = document.getElementById('inlinePoolFilterBtn');
+    const countBadge = document.getElementById('inlinePoolFilterCount');
+    
+    if (btn) {
+      btn.classList.toggle('pool-filter-btn--active', this.selectedPools.size > 0);
+    }
+    if (countBadge) {
+      if (this.selectedPools.size > 0) {
+        countBadge.textContent = this.selectedPools.size;
+        countBadge.style.display = 'inline';
+      } else {
+        countBadge.style.display = 'none';
+      }
+    }
+    
+    // Update checkboxes
+    document.querySelectorAll('#inlinePoolFilterDropdown .pool-filter-option').forEach(opt => {
+      const poolName = opt.dataset.pool;
+      opt.classList.toggle('pool-filter-option--selected', this.selectedPools.has(poolName));
+    });
   }
   
   /**

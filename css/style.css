@@ -1944,6 +1944,30 @@ body::before {
   animation: fadeIn 0.2s ease-out;
 }
 
+.inline-results__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.inline-results__title {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.inline-results__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .inline-results__empty {
   color: var(--text-muted);
   font-size: 0.9rem;
