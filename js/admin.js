@@ -1497,9 +1497,14 @@ class AdminPanel {
       this.pendingSchedules[date] = [];
     }
     
+    // Remove/modify overlapping entries for the selected lanes and time range
+    info.sections.forEach(section => {
+      const selectedLanes = section.lanes.map(lane => this.parseLaneId(lane));
+      this.removeOverlappingEntries(date, section.id, selectedLanes, info.startTime, info.endTime);
+    });
+    
     // Create schedule entries for each section (grouping lanes together)
     info.sections.forEach(section => {
-      // Parse all lane IDs for this section
       const laneIds = section.lanes.map(lane => this.parseLaneId(lane));
       
       const entry = {
@@ -1525,6 +1530,80 @@ class AdminPanel {
     
     this.showToast(`Applied "${activity.name}" to ${info.cellCount} cells`, 'success');
     this.autoSave();
+  }
+  
+  /**
+   * Remove or modify entries that overlap with the given time range and lanes
+   */
+  removeOverlappingEntries(date, sectionId, lanes, startTime, endTime) {
+    if (!this.pendingSchedules[date]) return;
+    
+    const newEntries = [];
+    
+    this.pendingSchedules[date].forEach(entry => {
+      // Skip entries for different sections
+      if (entry.section !== sectionId) {
+        newEntries.push(entry);
+        return;
+      }
+      
+      const entryStart = this.schedule.timeToMinutes(entry.start);
+      const entryEnd = this.schedule.timeToMinutes(entry.end);
+      
+      // Check if this entry overlaps with our time range
+      const overlaps = entryStart < endTime && entryEnd > startTime;
+      if (!overlaps) {
+        newEntries.push(entry);
+        return;
+      }
+      
+      // Check which lanes overlap
+      const overlappingLanes = entry.lanes.filter(l => 
+        lanes.some(sl => String(sl) === String(l))
+      );
+      
+      if (overlappingLanes.length === 0) {
+        // No lane overlap, keep the entry as-is
+        newEntries.push(entry);
+        return;
+      }
+      
+      // Some lanes overlap - we need to handle this entry
+      const remainingLanes = entry.lanes.filter(l => 
+        !lanes.some(sl => String(sl) === String(l))
+      );
+      
+      if (remainingLanes.length > 0) {
+        // Some lanes don't overlap - keep entry for those lanes
+        newEntries.push({
+          ...entry,
+          lanes: remainingLanes
+        });
+      }
+      
+      // For the overlapping lanes, we may need to split the time range
+      if (overlappingLanes.length > 0) {
+        // Part before our selection
+        if (entryStart < startTime) {
+          newEntries.push({
+            ...entry,
+            lanes: overlappingLanes,
+            end: this.minutesToTime24(startTime)
+          });
+        }
+        
+        // Part after our selection
+        if (entryEnd > endTime) {
+          newEntries.push({
+            ...entry,
+            lanes: overlappingLanes,
+            start: this.minutesToTime24(endTime)
+          });
+        }
+      }
+    });
+    
+    this.pendingSchedules[date] = newEntries;
   }
   
   startGridCellTooltip(e, cell) {
