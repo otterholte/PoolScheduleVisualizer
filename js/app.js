@@ -471,9 +471,27 @@ class PoolScheduleApp {
   
   // Navigate day by offset (-1 for prev, +1 for next)
   navigateDay(offset) {
+    const today = this.formatDate(new Date());
+    const isCurrentlyOnToday = this.selectedDate === today;
+    const currentRealTimeMinutes = this.getCurrentTimeMinutes();
+    const poolHours = this.schedule.getPoolHours(this.selectedDate);
+    const isAfterClosing = poolHours && currentRealTimeMinutes >= poolHours.close;
+    
+    // Navigate to new date
     const current = new Date(this.selectedDate + 'T12:00:00');
     current.setDate(current.getDate() + offset);
-    this.selectDate(this.formatDate(current));
+    const newDate = this.formatDate(current);
+    
+    // Special case: Going from today (after closing) to tomorrow
+    // Set scrubber to opening time instead of keeping it at closing time
+    if (isCurrentlyOnToday && isAfterClosing && offset === 1) {
+      const tomorrowHours = this.schedule.getPoolHours(newDate);
+      if (tomorrowHours) {
+        this.selectedTimeMinutes = tomorrowHours.open;
+      }
+    }
+    
+    this.selectDate(newDate);
   }
   
   // Toggle date picker visibility
@@ -735,8 +753,8 @@ class PoolScheduleApp {
   updateNextOpenTime(poolHours, currentTimeMinutes) {
     if (!poolHours) return;
     
-    const openTime = this.schedule.minutesToTimeString(poolHours.open);
-    const formattedOpenTime = this.formatTimeAMPM(openTime);
+    // minutesToTimeString already returns 12-hour format like "6:00 AM"
+    const formattedOpenTime = this.schedule.minutesToTimeString(poolHours.open);
     
     // Check if we're before opening or after closing
     if (currentTimeMinutes < poolHours.open) {
