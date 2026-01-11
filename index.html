@@ -434,30 +434,21 @@
     <div id="listView" class="list-view" style="display: none;">
       <div class="list-view__container">
         
-        <!-- Activity Finder - Fashion Homepage Style -->
+        <!-- Activity Finder - Segmented Control Style -->
         <div class="activity-finder" id="activityFinder">
           <h2 class="activity-finder__title">What are you looking for?</h2>
           
-          <!-- Category Cards Row -->
-          <div class="category-cards" id="categoryCards">
-            <!-- Category cards rendered by JS -->
+          <!-- Segmented Tab Bar -->
+          <div class="segment-tabs" id="segmentTabs">
+            <div class="segment-tabs__track">
+              <!-- Tabs rendered by JS -->
+            </div>
+            <div class="segment-tabs__indicator" id="segmentIndicator"></div>
           </div>
           
-          <!-- Filter Header (shows when a category is selected) -->
-          <div class="filter-header" id="filterHeader" style="display: none;">
-            <button class="filter-header__clear" id="clearCategoryFilter">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-              <span>Clear Filter</span>
-            </button>
-            <span class="filter-header__label" id="filterLabel">CLUBS & TEAMS</span>
-          </div>
-          
-          <!-- Activity Sections (all categories with their activities) -->
-          <div class="activity-sections" id="activitySections">
-            <!-- Sections rendered by JS -->
+          <!-- Activities for selected category -->
+          <div class="segment-content" id="segmentContent">
+            <!-- Activities rendered by JS -->
           </div>
         </div>
         

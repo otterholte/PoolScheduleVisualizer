@@ -52,11 +52,9 @@ class PoolScheduleApp {
       // List view elements
       listView: document.getElementById('listView'),
       activityFinder: document.getElementById('activityFinder'),
-      categoryCards: document.getElementById('categoryCards'),
-      filterHeader: document.getElementById('filterHeader'),
-      clearCategoryFilter: document.getElementById('clearCategoryFilter'),
-      filterLabel: document.getElementById('filterLabel'),
-      activitySections: document.getElementById('activitySections'),
+      segmentTabs: document.getElementById('segmentTabs'),
+      segmentIndicator: document.getElementById('segmentIndicator'),
+      segmentContent: document.getElementById('segmentContent'),
       activityResults: document.getElementById('activityResults'),
       activityResultsBack: document.getElementById('activityResultsBack'),
       selectedActivityColor: document.getElementById('selectedActivityColor'),
@@ -72,8 +70,8 @@ class PoolScheduleApp {
     // Currently selected activity for list view
     this.selectedListActivity = null;
     
-    // Currently selected category filter (null = show all)
-    this.selectedCategoryFilter = null;
+    // Currently selected category tab (first one by default)
+    this.selectedCategoryTab = null;
     
     // Number of days to show in week grid (can expand)
     this.daysToShow = 7;
@@ -630,8 +628,8 @@ class PoolScheduleApp {
     } else if (view === 'list') {
       if (mapView) mapView.style.display = 'none';
       if (listView) listView.style.display = 'flex';
-      // Render category cards and activity sections if not already done
-      this.renderCategoryCards();
+      // Render segmented tabs if not already done
+      this.renderSegmentTabs();
       // Show finder, hide results
       this.showActivitySelector();
     }
@@ -641,177 +639,121 @@ class PoolScheduleApp {
   }
   
   /**
-   * Render the category cards for the fashion homepage style
+   * Render the segmented tabs for category selection
    */
-  renderCategoryCards() {
-    const container = this.elements.categoryCards;
-    if (!container) return;
+  renderSegmentTabs() {
+    const tabsContainer = this.elements.segmentTabs;
+    if (!tabsContainer) return;
+    
+    const track = tabsContainer.querySelector('.segment-tabs__track');
+    if (!track) return;
     
     // Don't re-render if already populated
-    if (container.children.length > 0) return;
+    if (track.children.length > 0) return;
     
     const categories = this.schedule.getActivityCategories();
     const activities = this.schedule.getActivities();
     
-    // Category icons mapping
-    const categoryIcons = {
-      open_swim: '≋',
-      clubs_teams: '🏅',
-      classes: '📚',
-      specialty: '🎯',
-      therapy: '💙',
-      private: '🔒'
-    };
-    
-    // Only show categories that have activities (excluding 'closed')
-    categories.forEach(cat => {
+    // Get categories with activities
+    const validCategories = categories.filter(cat => {
       const catActivities = activities.filter(a => a.category === cat.id && a.id !== 'closed');
-      if (catActivities.length === 0) return;
-      
-      const card = document.createElement('button');
-      card.className = 'category-card';
-      card.type = 'button';
-      card.dataset.categoryId = cat.id;
-      
-      const icon = categoryIcons[cat.id] || '○';
-      const count = catActivities.length;
-      const countText = count === 1 ? '1 activity' : `${count} activities`;
-      
-      card.innerHTML = `
-        <span class="category-card__icon">${icon}</span>
-        <span class="category-card__name">${cat.name}</span>
-        <span class="category-card__count">${countText}</span>
-      `;
-      
-      card.addEventListener('click', () => this.toggleCategoryFilter(cat.id));
-      
-      container.appendChild(card);
+      return catActivities.length > 0;
     });
     
-    // Setup clear filter button
-    if (this.elements.clearCategoryFilter) {
-      this.elements.clearCategoryFilter.addEventListener('click', () => this.clearCategoryFilter());
-    }
+    // Create tabs
+    validCategories.forEach((cat, index) => {
+      const tab = document.createElement('button');
+      tab.className = 'segment-tab';
+      tab.type = 'button';
+      tab.dataset.categoryId = cat.id;
+      tab.textContent = cat.name;
+      
+      tab.addEventListener('click', () => this.selectCategoryTab(cat.id));
+      
+      track.appendChild(tab);
+    });
     
-    // Render all activity sections
-    this.renderActivitySections();
+    // Select first category by default
+    if (validCategories.length > 0) {
+      this.selectCategoryTab(validCategories[0].id);
+    }
   }
   
   /**
-   * Render all activity sections grouped by category
+   * Select a category tab and show its activities
    */
-  renderActivitySections() {
-    const container = this.elements.activitySections;
+  selectCategoryTab(categoryId) {
+    this.selectedCategoryTab = categoryId;
+    
+    // Update tab states
+    const tabs = document.querySelectorAll('.segment-tab');
+    let activeTab = null;
+    
+    tabs.forEach(tab => {
+      const isActive = tab.dataset.categoryId === categoryId;
+      tab.classList.toggle('segment-tab--active', isActive);
+      if (isActive) activeTab = tab;
+    });
+    
+    // Move the indicator
+    this.updateSegmentIndicator(activeTab);
+    
+    // Render activities for this category
+    this.renderSegmentContent(categoryId);
+  }
+  
+  /**
+   * Update the sliding indicator position
+   */
+  updateSegmentIndicator(activeTab) {
+    const indicator = this.elements.segmentIndicator;
+    if (!indicator || !activeTab) return;
+    
+    const track = activeTab.parentElement;
+    const trackRect = track.getBoundingClientRect();
+    const tabRect = activeTab.getBoundingClientRect();
+    
+    const left = tabRect.left - trackRect.left + 4; // +4 for track padding
+    const width = tabRect.width;
+    
+    indicator.style.left = `${left}px`;
+    indicator.style.width = `${width}px`;
+  }
+  
+  /**
+   * Render activities for the selected category
+   */
+  renderSegmentContent(categoryId) {
+    const container = this.elements.segmentContent;
     if (!container) return;
+    
+    const activities = this.schedule.getActivities()
+      .filter(a => a.category === categoryId && a.id !== 'closed')
+      .sort((a, b) => a.name.localeCompare(b.name));
     
     container.innerHTML = '';
     
-    const categories = this.schedule.getActivityCategories();
-    const activities = this.schedule.getActivities();
+    const grid = document.createElement('div');
+    grid.className = 'segment-content__grid';
     
-    // Category icons mapping
-    const categoryIcons = {
-      open_swim: '≋',
-      clubs_teams: '🏅',
-      classes: '📚',
-      specialty: '🎯',
-      therapy: '💙',
-      private: '🔒'
-    };
-    
-    categories.forEach(cat => {
-      const catActivities = activities
-        .filter(a => a.category === cat.id && a.id !== 'closed')
-        .sort((a, b) => a.name.localeCompare(b.name));
-      
-      if (catActivities.length === 0) return;
-      
-      // Skip if filtering and this isn't the selected category
-      if (this.selectedCategoryFilter && this.selectedCategoryFilter !== cat.id) return;
-      
-      const section = document.createElement('div');
-      section.className = 'activity-section';
-      section.dataset.categoryId = cat.id;
-      
-      const icon = categoryIcons[cat.id] || '○';
-      
-      section.innerHTML = `
-        <div class="activity-section__header">
-          <span class="activity-section__icon">${icon}</span>
-          <span class="activity-section__name">${cat.name}</span>
-        </div>
-        <div class="activity-section__grid"></div>
-      `;
-      
-      const grid = section.querySelector('.activity-section__grid');
-      
-      catActivities.forEach(activity => {
-        const item = document.createElement('button');
-        item.className = 'activity-item';
-        item.type = 'button';
-        item.innerHTML = `
-          <span class="activity-item__dot" style="background: ${activity.color}"></span>
+    activities.forEach(activity => {
+      const item = document.createElement('button');
+      item.className = 'activity-item';
+      item.type = 'button';
+      item.innerHTML = `
+        <span class="activity-item__dot" style="background: ${activity.color}"></span>
+        <div class="activity-item__info">
           <span class="activity-item__name">${activity.name}</span>
-          <svg class="activity-item__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="9 18 15 12 9 6"></polyline>
-          </svg>
-        `;
-        item.addEventListener('click', () => this.selectListActivity(activity.id));
-        grid.appendChild(item);
-      });
-      
-      container.appendChild(section);
-    });
-  }
-  
-  /**
-   * Toggle category filter - click to filter, click again to clear
-   */
-  toggleCategoryFilter(categoryId) {
-    if (this.selectedCategoryFilter === categoryId) {
-      // Same category clicked - clear filter
-      this.clearCategoryFilter();
-    } else {
-      // Different category - set filter
-      this.selectedCategoryFilter = categoryId;
-      
-      // Update card states
-      document.querySelectorAll('.category-card').forEach(card => {
-        card.classList.toggle('category-card--selected', card.dataset.categoryId === categoryId);
-      });
-      
-      // Show filter header
-      const category = this.schedule.getActivityCategories().find(c => c.id === categoryId);
-      if (this.elements.filterHeader) {
-        this.elements.filterHeader.style.display = 'flex';
-      }
-      if (this.elements.filterLabel && category) {
-        this.elements.filterLabel.textContent = category.name;
-      }
-      
-      // Re-render sections with filter
-      this.renderActivitySections();
-    }
-  }
-  
-  /**
-   * Clear category filter - show all sections
-   */
-  clearCategoryFilter() {
-    this.selectedCategoryFilter = null;
-    
-    // Remove selected state from all cards
-    document.querySelectorAll('.category-card').forEach(card => {
-      card.classList.remove('category-card--selected');
+        </div>
+        <svg class="activity-item__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      `;
+      item.addEventListener('click', () => this.selectListActivity(activity.id));
+      grid.appendChild(item);
     });
     
-    // Hide filter header
-    if (this.elements.filterHeader) {
-      this.elements.filterHeader.style.display = 'none';
-    }
-    
-    // Re-render all sections
-    this.renderActivitySections();
+    container.appendChild(grid);
   }
   
   /**
