@@ -2274,16 +2274,30 @@ body::before {
   padding: 8px 0;
 }
 
-/* Individual session chip (non-grouped) */
+/* Individual session chip (non-grouped) - matches regular session chips */
 .session-chip--individual {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   padding: 8px 14px;
-  background: var(--bg-tertiary);
+  background: var(--bg-primary);
   border: 1px solid var(--border-subtle);
   border-radius: 20px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.session-chip--individual .session-chip__time {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.session-chip--individual .session-chip__location {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding-left: 6px;
+  border-left: 1px solid var(--border-subtle);
 }
 
 /* Sessions Detail - Pool Table */

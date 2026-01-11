@@ -974,7 +974,7 @@ class PoolScheduleApp {
       
       windowsContainer.innerHTML = windowsHtml;
       
-      // Re-attach click handlers for grouped windows
+      // Re-attach click handlers for grouped windows (with accordion behavior)
       windowsContainer.querySelectorAll('[data-toggle]').forEach(btn => {
         btn.addEventListener('click', () => {
           const windowId = btn.dataset.toggle;
@@ -982,6 +982,18 @@ class PoolScheduleApp {
           const detail = document.getElementById(`${windowId}-detail`);
           if (windowGroup && detail) {
             const isExpanded = detail.style.display !== 'none';
+            
+            // Accordion: collapse all other expanded groups first
+            if (!isExpanded) {
+              document.querySelectorAll('.availability-window-group--expanded').forEach(group => {
+                const otherDetail = group.querySelector('.availability-window-detail');
+                if (otherDetail) {
+                  otherDetail.style.display = 'none';
+                }
+                group.classList.remove('availability-window-group--expanded');
+              });
+            }
+            
             detail.style.display = isExpanded ? 'none' : 'block';
             windowGroup.classList.toggle('availability-window-group--expanded', !isExpanded);
           }
@@ -1541,6 +1553,18 @@ class PoolScheduleApp {
         
         if (windowGroup && detail) {
           const isExpanded = detail.style.display !== 'none';
+          
+          // Accordion: collapse all other expanded groups first
+          if (!isExpanded) {
+            document.querySelectorAll('.availability-window-group--expanded').forEach(group => {
+              const otherDetail = group.querySelector('.availability-window-detail');
+              if (otherDetail) {
+                otherDetail.style.display = 'none';
+              }
+              group.classList.remove('availability-window-group--expanded');
+            });
+          }
+          
           detail.style.display = isExpanded ? 'none' : 'block';
           windowGroup.classList.toggle('availability-window-group--expanded', !isExpanded);
         }
