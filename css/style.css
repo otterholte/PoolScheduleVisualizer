@@ -3300,6 +3300,23 @@ body::before {
   display: none; /* Hide the start time text for dimmed cells */
 }
 
+/* Cell selected (drag selection in admin) */
+.schedule-grid__cell--selected {
+  outline: 2px solid var(--accent-cyan) !important;
+  outline-offset: -2px;
+  box-shadow: inset 0 0 0 2px rgba(6, 182, 212, 0.3) !important;
+  position: relative;
+  z-index: 5;
+}
+
+.schedule-grid__cell--selected::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 182, 212, 0.2);
+  pointer-events: none;
+}
+
 /* Cell closed/no activity */
 .schedule-grid__cell--closed {
   background: var(--bg-primary);

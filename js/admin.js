@@ -83,6 +83,13 @@ class AdminPanel {
     
     // Clock update interval
     this.clockInterval = null;
+    
+    // Grid selection state
+    this.isSelecting = false;
+    this.selectionStart = null;
+    this.selectionEnd = null;
+    this.selectedCells = new Set();
+    this.selectionPanelOpen = false;
   }
 
   /**
@@ -974,12 +981,17 @@ class AdminPanel {
     // Add row hover handlers
     const rows = table.querySelectorAll('tbody tr');
     rows.forEach(row => {
-      row.addEventListener('mouseenter', () => row.classList.add('schedule-grid__row--hover'));
+      row.addEventListener('mouseenter', () => {
+        if (!this.isSelecting) row.classList.add('schedule-grid__row--hover');
+      });
       row.addEventListener('mouseleave', () => row.classList.remove('schedule-grid__row--hover'));
     });
     
     // Add tooltip handlers for all cells
     this.setupGridCellTooltips();
+    
+    // Add selection handlers for all cells
+    this.setupGridCellSelection();
   }
   
   setupGridCellTooltips() {
@@ -994,6 +1006,379 @@ class AdminPanel {
       });
       cell.addEventListener('mouseleave', () => this.cancelGridCellTooltip());
     });
+  }
+  
+  // ==========================================
+  // Grid Cell Selection Methods
+  // ==========================================
+  
+  setupGridCellSelection() {
+    const allCells = this.elements.scheduleGrid.querySelectorAll('.schedule-grid__cell');
+    const table = this.elements.scheduleGrid;
+    
+    // Mousedown - start selection
+    allCells.forEach(cell => {
+      cell.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return; // Only left click
+        e.preventDefault();
+        this.startSelection(cell);
+      });
+      
+      cell.addEventListener('mouseenter', () => {
+        if (this.isSelecting) {
+          this.updateSelection(cell);
+        }
+      });
+    });
+    
+    // Mouseup - end selection
+    document.addEventListener('mouseup', (e) => {
+      if (this.isSelecting) {
+        this.endSelection(e);
+      }
+    });
+    
+    // Escape to cancel selection
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        this.cancelSelection();
+      }
+    });
+  }
+  
+  startSelection(cell) {
+    this.isSelecting = true;
+    this.selectionStart = cell;
+    this.selectionEnd = cell;
+    this.selectedCells.clear();
+    this.cancelGridCellTooltip(); // Hide tooltip during selection
+    this.closeSelectionPanel(); // Close any open panel
+    this.updateSelectionHighlight();
+  }
+  
+  updateSelection(cell) {
+    if (!this.isSelecting) return;
+    this.selectionEnd = cell;
+    this.updateSelectionHighlight();
+  }
+  
+  updateSelectionHighlight() {
+    // Clear all previous highlights
+    const allCells = this.elements.scheduleGrid.querySelectorAll('.schedule-grid__cell');
+    allCells.forEach(c => c.classList.remove('schedule-grid__cell--selected'));
+    this.selectedCells.clear();
+    
+    if (!this.selectionStart || !this.selectionEnd) return;
+    
+    // Get bounds of selection rectangle
+    const startRow = parseInt(this.selectionStart.dataset.time, 10);
+    const endRow = parseInt(this.selectionEnd.dataset.time, 10);
+    const minRow = Math.min(startRow, endRow);
+    const maxRow = Math.max(startRow, endRow);
+    
+    // Get column indices for section/lane
+    const startCol = this.getCellColumnIndex(this.selectionStart);
+    const endCol = this.getCellColumnIndex(this.selectionEnd);
+    const minCol = Math.min(startCol, endCol);
+    const maxCol = Math.max(startCol, endCol);
+    
+    // Select all cells in the rectangle
+    allCells.forEach(cell => {
+      const cellRow = parseInt(cell.dataset.time, 10);
+      const cellCol = this.getCellColumnIndex(cell);
+      
+      if (cellRow >= minRow && cellRow <= maxRow && cellCol >= minCol && cellCol <= maxCol) {
+        cell.classList.add('schedule-grid__cell--selected');
+        this.selectedCells.add(cell);
+      }
+    });
+  }
+  
+  getCellColumnIndex(cell) {
+    const row = cell.closest('tr');
+    if (!row) return -1;
+    const cells = Array.from(row.querySelectorAll('.schedule-grid__cell'));
+    return cells.indexOf(cell);
+  }
+  
+  endSelection(e) {
+    if (!this.isSelecting) return;
+    this.isSelecting = false;
+    
+    if (this.selectedCells.size > 0) {
+      // Check if we're in quick-add mode (single activity selected in legend)
+      const singleActivity = this.getSingleSelectedActivity();
+      
+      if (singleActivity) {
+        // Quick-add mode: automatically apply the activity
+        this.quickAddActivity(singleActivity);
+      } else {
+        // Show selection panel
+        this.showSelectionPanel(e);
+      }
+    }
+  }
+  
+  cancelSelection() {
+    this.isSelecting = false;
+    this.selectionStart = null;
+    this.selectionEnd = null;
+    
+    // Clear highlights
+    const allCells = this.elements.scheduleGrid.querySelectorAll('.schedule-grid__cell');
+    allCells.forEach(c => c.classList.remove('schedule-grid__cell--selected'));
+    this.selectedCells.clear();
+    
+    this.closeSelectionPanel();
+  }
+  
+  getSingleSelectedActivity() {
+    // Check if exactly one activity filter is active
+    if (this.activeFilters.length !== 1) return null;
+    
+    const filter = this.activeFilters[0];
+    if (filter.type !== 'activity') return null;
+    
+    return this.schedule.getActivity(filter.id);
+  }
+  
+  getSelectionInfo() {
+    if (this.selectedCells.size === 0) return null;
+    
+    const cells = Array.from(this.selectedCells);
+    const date = this.elements.previewDate.value;
+    
+    // Extract unique sections, lanes, and time range
+    const sectionsMap = new Map(); // sectionId -> { section, lanes Set }
+    let minTime = Infinity;
+    let maxTime = -Infinity;
+    
+    cells.forEach(cell => {
+      const sectionId = cell.dataset.section;
+      const lane = cell.dataset.lane;
+      const time = parseInt(cell.dataset.time, 10);
+      
+      if (!sectionsMap.has(sectionId)) {
+        const layout = this.schedule.getPoolLayout();
+        const section = layout?.sections?.find(s => s.id === sectionId);
+        sectionsMap.set(sectionId, { section, lanes: new Set() });
+      }
+      sectionsMap.get(sectionId).lanes.add(lane);
+      
+      minTime = Math.min(minTime, time);
+      maxTime = Math.max(maxTime, time);
+    });
+    
+    // Convert to array format
+    const sections = [];
+    sectionsMap.forEach((data, sectionId) => {
+      sections.push({
+        id: sectionId,
+        name: data.section?.name || sectionId,
+        lanes: Array.from(data.lanes).sort((a, b) => {
+          // Sort lanes numerically if possible
+          const numA = parseInt(a, 10);
+          const numB = parseInt(b, 10);
+          if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+          return a.localeCompare(b);
+        })
+      });
+    });
+    
+    // Add 30 minutes to maxTime to get end time
+    const endTime = maxTime + 30;
+    
+    return {
+      date,
+      startTime: minTime,
+      endTime: endTime,
+      startTimeStr: this.minutesToTime(minTime),
+      endTimeStr: this.minutesToTime(endTime),
+      sections,
+      cellCount: cells.length
+    };
+  }
+  
+  minutesToTime(minutes) {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    return `${displayHours}:${mins.toString().padStart(2, '0')} ${period}`;
+  }
+  
+  showSelectionPanel(e) {
+    const info = this.getSelectionInfo();
+    if (!info) return;
+    
+    // Create or update selection panel
+    let panel = document.getElementById('gridSelectionPanel');
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.id = 'gridSelectionPanel';
+      panel.className = 'grid-selection-panel';
+      document.body.appendChild(panel);
+    }
+    
+    // Build section/lane summary
+    const poolSummary = info.sections.map(s => {
+      const laneStr = s.lanes.length > 3 
+        ? `Lanes ${s.lanes[0]}-${s.lanes[s.lanes.length - 1]}`
+        : `Lane${s.lanes.length > 1 ? 's' : ''} ${s.lanes.join(', ')}`;
+      return `<div class="grid-selection-panel__pool">${s.name} - ${laneStr}</div>`;
+    }).join('');
+    
+    // Build activity dropdown
+    const activities = this.schedule.data.activities || [];
+    const activityOptions = activities.map(a => 
+      `<option value="${a.id}">${a.name}</option>`
+    ).join('');
+    
+    // Format date
+    const dateObj = new Date(info.date + 'T12:00:00');
+    const dateStr = dateObj.toLocaleDateString('en-US', { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+    
+    panel.innerHTML = `
+      <div class="grid-selection-panel__header">
+        <span class="grid-selection-panel__title">Edit Selection</span>
+        <button class="grid-selection-panel__close" id="closeSelectionPanel">&times;</button>
+      </div>
+      <div class="grid-selection-panel__content">
+        <div class="grid-selection-panel__info">
+          <div class="grid-selection-panel__date">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            ${dateStr}
+          </div>
+          <div class="grid-selection-panel__time">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            ${info.startTimeStr} - ${info.endTimeStr}
+          </div>
+          <div class="grid-selection-panel__pools">
+            ${poolSummary}
+          </div>
+        </div>
+        <div class="grid-selection-panel__form">
+          <label class="grid-selection-panel__label">Activity</label>
+          <select id="selectionActivityPicker" class="grid-selection-panel__select">
+            <option value="">Select an activity...</option>
+            ${activityOptions}
+          </select>
+        </div>
+        <div class="grid-selection-panel__actions">
+          <button type="button" class="grid-selection-panel__btn grid-selection-panel__btn--cancel" id="cancelSelectionBtn">Cancel</button>
+          <button type="button" class="grid-selection-panel__btn grid-selection-panel__btn--apply" id="applySelectionBtn">Apply Activity</button>
+        </div>
+      </div>
+    `;
+    
+    // Position near mouse
+    const panelWidth = 320;
+    const panelHeight = 350;
+    let x = e.clientX + 20;
+    let y = e.clientY - panelHeight / 2;
+    
+    // Keep within viewport
+    if (x + panelWidth > window.innerWidth - 20) {
+      x = e.clientX - panelWidth - 20;
+    }
+    if (y < 20) y = 20;
+    if (y + panelHeight > window.innerHeight - 20) {
+      y = window.innerHeight - panelHeight - 20;
+    }
+    
+    panel.style.left = x + 'px';
+    panel.style.top = y + 'px';
+    panel.classList.add('grid-selection-panel--open');
+    this.selectionPanelOpen = true;
+    
+    // Event listeners
+    document.getElementById('closeSelectionPanel').addEventListener('click', () => this.cancelSelection());
+    document.getElementById('cancelSelectionBtn').addEventListener('click', () => this.cancelSelection());
+    document.getElementById('applySelectionBtn').addEventListener('click', () => this.applySelectionActivity());
+  }
+  
+  closeSelectionPanel() {
+    const panel = document.getElementById('gridSelectionPanel');
+    if (panel) {
+      panel.classList.remove('grid-selection-panel--open');
+    }
+    this.selectionPanelOpen = false;
+  }
+  
+  applySelectionActivity() {
+    const activitySelect = document.getElementById('selectionActivityPicker');
+    const activityId = activitySelect?.value;
+    
+    if (!activityId) {
+      this.showToast('Please select an activity', 'error');
+      return;
+    }
+    
+    const activity = this.schedule.getActivity(activityId);
+    if (!activity) {
+      this.showToast('Activity not found', 'error');
+      return;
+    }
+    
+    this.applyActivityToSelection(activity);
+  }
+  
+  quickAddActivity(activity) {
+    this.applyActivityToSelection(activity);
+    this.showToast(`Added "${activity.name}" to selection`, 'success');
+  }
+  
+  applyActivityToSelection(activity) {
+    const info = this.getSelectionInfo();
+    if (!info) return;
+    
+    const date = info.date;
+    
+    // Create schedule entries for each section/lane combination
+    info.sections.forEach(section => {
+      section.lanes.forEach(lane => {
+        const entry = {
+          section: section.id,
+          lanes: [this.parseLaneId(lane)],
+          start: info.startTimeStr.replace(' ', ''),
+          end: info.endTimeStr.replace(' ', ''),
+          activity: activity.id
+        };
+        
+        // Add to pending schedules
+        if (!this.pendingSchedules[date]) {
+          this.pendingSchedules[date] = [];
+        }
+        
+        // Check for existing entry that might overlap
+        // For simplicity, just add the new entry (a proper implementation would merge/replace)
+        this.pendingSchedules[date].push(entry);
+      });
+    });
+    
+    // Update schedule data and re-render
+    this.schedule.data.schedules = this.pendingSchedules;
+    
+    // Clear selection and close panel
+    this.cancelSelection();
+    
+    // Re-render grid
+    this.renderGridView();
+    this.updatePreview();
+    
+    this.showToast(`Applied "${activity.name}" to ${info.cellCount} cells`, 'success');
   }
   
   startGridCellTooltip(e, cell) {
