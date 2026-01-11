@@ -625,8 +625,10 @@ class PoolScheduleApp {
         </div>
       `;
     } else {
-      // Get current time and selected filters
-      const currentTime = this.selectedTimeMinutes;
+      // Get scrubber time and actual current time
+      const scrubberTime = this.selectedTimeMinutes;
+      const actualCurrentTime = this.getCurrentTimeMinutes();
+      const isViewingToday = this.selectedDate === this.formatDate(new Date());
       const selectedActivityIds = this.getSelectedActivityIds();
       const hasFilters = selectedActivityIds.length > 0;
       
@@ -634,10 +636,14 @@ class PoolScheduleApp {
         const startMinutes = this.schedule.timeToMinutes(entry.start);
         const endMinutes = this.schedule.timeToMinutes(entry.end);
         
-        // Check timing
-        const isCurrent = currentTime >= startMinutes && currentTime < endMinutes;
-        const isPast = endMinutes <= currentTime;
-        const isFuture = startMinutes > currentTime;
+        // Check timing relative to scrubber position (for NOW badge)
+        const isAtScrubber = scrubberTime >= startMinutes && scrubberTime < endMinutes;
+        
+        // Check timing relative to actual current time (for past/future styling)
+        // Only apply real-time past styling when viewing today
+        const isPast = isViewingToday && endMinutes <= actualCurrentTime;
+        const isFuture = !isViewingToday || startMinutes > actualCurrentTime;
+        const isCurrent = isAtScrubber;
         
         // Check if this matches selected filters (only highlight future matches)
         const matchesFilter = selectedActivityIds.includes(entry.activity?.id);
