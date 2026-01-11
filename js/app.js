@@ -10,6 +10,9 @@ class PoolScheduleApp {
     this.selectedDate = this.formatDate(this.currentDate);
     this.selectedTimeMinutes = this.getCurrentTimeMinutes();
     
+    // Track if time display should show live time or scrubber time
+    this.showLiveTime = true;
+    
     // Filter state: array of selected items
     // Each item: { type: 'activity'|'category', id: 'xxx', name: 'xxx', activityIds?: [...] }
     this.activeFilters = [];
@@ -260,18 +263,17 @@ class PoolScheduleApp {
   }
 
   setupClock() {
-    // Update the clock display every second to show live time
+    // Update the clock display every second when showing live time
     const updateClock = () => {
-      const now = new Date();
-      const hours = now.getHours();
-      const minutes = now.getMinutes();
-      const period = hours >= 12 ? 'PM' : 'AM';
-      const displayHour = hours % 12 || 12;
-      const displayMinutes = minutes.toString().padStart(2, '0');
-      const timeStr = `${displayHour}:${displayMinutes} ${period}`;
-      
-      // Always update the clock display with current real time
-      if (this.elements.timeDisplay) {
+      // Only update display with live time if showLiveTime is true
+      if (this.showLiveTime && this.elements.timeDisplay) {
+        const now = new Date();
+        const hours = now.getHours();
+        const minutes = now.getMinutes();
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const displayHour = hours % 12 || 12;
+        const displayMinutes = minutes.toString().padStart(2, '0');
+        const timeStr = `${displayHour}:${displayMinutes} ${period}`;
         this.elements.timeDisplay.textContent = timeStr;
       }
     };
@@ -290,18 +292,21 @@ class PoolScheduleApp {
       if (currentMinute !== lastMinute) {
         lastMinute = currentMinute;
         
-        // Check if we're viewing today and at live time
+        // Check if we're viewing today and showing live time
         const today = this.formatDate(now);
         const currentTimeMinutes = this.getCurrentTimeMinutes();
         const isViewingToday = this.selectedDate === today;
-        const isAtLiveTime = this.selectedTimeMinutes === currentTimeMinutes - 1 || 
-                            this.selectedTimeMinutes === currentTimeMinutes;
         
-        if (isViewingToday && isAtLiveTime) {
-          // Auto-advance scrubber to current time
-          this.selectedTimeMinutes = currentTimeMinutes;
-          this.updateTimeSlider();
-          this.updateDisplay();
+        if (isViewingToday && this.showLiveTime) {
+          // Auto-advance scrubber to current time when showing live
+          const hours = this.schedule.getPoolHours(this.selectedDate);
+          if (hours) {
+            if (currentTimeMinutes >= hours.open && currentTimeMinutes <= hours.close) {
+              this.selectedTimeMinutes = currentTimeMinutes;
+              this.updateTimeSlider();
+              this.updateDisplay();
+            }
+          }
         }
         
         // Always update display indicators (LIVE badge, closed state)
@@ -522,15 +527,18 @@ class PoolScheduleApp {
   }
 
   setupEventListeners() {
-    // Time slider
+    // Time slider - when manually moved, show scrubber time
     this.elements.timeSlider.addEventListener('input', (e) => {
       this.selectedTimeMinutes = parseInt(e.target.value, 10);
+      this.showLiveTime = false; // Switch to showing scrubber time
+      this.updateTimeDisplayFromScrubber();
       this.updateDisplay();
     });
     
-    // Now button - returns to current time position
+    // Now button - returns to current time and shows live clock
     this.elements.btnNow.addEventListener('click', () => {
       this.selectedDate = this.formatDate(new Date());
+      this.showLiveTime = true; // Switch back to live time display
       this.updateSliderRange(true); // forceReset to current time position
       this.updateTimeSlider();
       this.updateDisplay();
@@ -1839,6 +1847,16 @@ class PoolScheduleApp {
 
   updateTimeSlider() {
     this.elements.timeSlider.value = this.selectedTimeMinutes;
+  }
+  
+  /**
+   * Update time display to show the scrubber position time
+   */
+  updateTimeDisplayFromScrubber() {
+    if (this.elements.timeDisplay) {
+      const timeStr = this.schedule.minutesToTimeString(this.selectedTimeMinutes);
+      this.elements.timeDisplay.textContent = timeStr;
+    }
   }
 
   updateDisplay() {
