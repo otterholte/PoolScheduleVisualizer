@@ -28,7 +28,6 @@ class AdminPanel {
       clearBtn: document.getElementById('clearBtn'),
       previewDate: document.getElementById('previewDate'),
       previewDateDisplay: document.getElementById('previewDateDisplay'),
-      todayBtn: document.getElementById('todayBtn'),
       clearDayBtn: document.getElementById('clearDayBtn'),
       scheduleList: document.getElementById('scheduleList'),
       exportBtn: document.getElementById('exportBtn'),
@@ -38,8 +37,52 @@ class AdminPanel {
       jsonCode: document.getElementById('jsonCode'),
       toast: document.getElementById('toast'),
       toastMessage: document.getElementById('toastMessage'),
-      quickTimeButtons: document.getElementById('quickTimeButtons')
+      quickTimeButtons: document.getElementById('quickTimeButtons'),
+      // View toggle elements
+      viewToggle: document.getElementById('adminViewToggle'),
+      listView: document.getElementById('adminListView'),
+      gridView: document.getElementById('adminGridView'),
+      scheduleGrid: document.getElementById('adminScheduleGrid'),
+      scheduleGridContainer: document.getElementById('adminScheduleGridContainer'),
+      gridLegendGrid: document.getElementById('adminGridLegendGrid'),
+      gridLegendSidebar: document.getElementById('adminGridLegendSidebar'),
+      gridLegendToggle: document.getElementById('adminGridLegendToggle'),
+      gridQuickFilterOpenSwim: document.getElementById('adminGridQuickFilterOpenSwim'),
+      gridQuickFilterShowAll: document.getElementById('adminGridQuickFilterShowAll'),
+      gridClearFilterBtn: document.getElementById('adminGridClearFilterBtn'),
+      gridDateLabel: document.getElementById('adminGridDateLabel'),
+      gridTimeDisplay: document.getElementById('adminGridTimeDisplay'),
+      gridBtnNow: document.getElementById('adminGridBtnNow'),
+      gridPrevDay: document.getElementById('adminGridPrevDay'),
+      gridNextDay: document.getElementById('adminGridNextDay'),
+      gridDatePickerBtn: document.getElementById('adminGridDatePickerBtn'),
+      gridDatePicker: document.getElementById('adminGridDatePicker'),
+      gridPickerMonth: document.getElementById('adminGridPickerMonth'),
+      gridPickerDays: document.getElementById('adminGridPickerDays'),
+      gridPrevMonth: document.getElementById('adminGridPrevMonth'),
+      gridNextMonth: document.getElementById('adminGridNextMonth'),
+      laneTooltip: document.getElementById('adminLaneTooltip'),
+      laneTooltipContent: document.getElementById('adminLaneTooltipContent')
     };
+    
+    // Current view: 'list' or 'grid'
+    this.currentView = 'list';
+    
+    // Filter state for grid view
+    this.activeFilters = [];
+    this.openSwimQuickMode = false;
+    
+    // Tooltip timer
+    this.tooltipTimer = null;
+    this.pendingTooltipCell = null;
+    this.lastTooltipEvent = null;
+    
+    // Date picker state
+    this.gridDatePickerOpen = false;
+    this.pickerMonth = new Date();
+    
+    // Clock update interval
+    this.clockInterval = null;
   }
 
   /**
@@ -62,6 +105,10 @@ class AdminPanel {
       this.elements.entryDate.value = today;
       this.elements.previewDate.value = today;
       this.updatePreview();
+      
+      // Setup view toggle and render grid legend
+      this.setupViewToggle();
+      this.renderGridLegend();
       
     } catch (error) {
       console.error('Failed to initialize admin panel:', error);
@@ -206,18 +253,15 @@ class AdminPanel {
       this.resetForm();
     });
     
-    // Preview date change
+    // Preview date change - also update grid view
     this.elements.previewDate.addEventListener('change', () => {
       this.updatePreview();
+      if (this.currentView === 'grid') {
+        this.renderGridView();
+      }
     });
     
-    // Today button
-    this.elements.todayBtn.addEventListener('click', () => {
-      const today = this.formatDate(new Date());
-      this.elements.previewDate.value = today;
-      this.elements.entryDate.value = today;
-      this.updatePreview();
-    });
+    // Note: Today button removed - date navigation is now in grid view header
     
     // Clear day
     this.elements.clearDayBtn.addEventListener('click', () => {
@@ -251,6 +295,9 @@ class AdminPanel {
     this.elements.entryDate.addEventListener('change', () => {
       this.elements.previewDate.value = this.elements.entryDate.value;
       this.updatePreview();
+      if (this.currentView === 'grid') {
+        this.renderGridView();
+      }
     });
   }
 
@@ -591,6 +638,716 @@ class AdminPanel {
     const period = hours >= 12 ? 'PM' : 'AM';
     const displayHours = hours % 12 || 12;
     return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+  }
+
+  // ==========================================
+  // View Toggle Methods
+  // ==========================================
+  
+  setupViewToggle() {
+    if (!this.elements.viewToggle) return;
+    
+    const buttons = this.elements.viewToggle.querySelectorAll('.view-toggle__btn');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.switchView(btn.dataset.view);
+      });
+    });
+    
+    // Setup grid filter buttons
+    if (this.elements.gridQuickFilterOpenSwim) {
+      this.elements.gridQuickFilterOpenSwim.addEventListener('click', () => {
+        this.selectOpenSwimFilter();
+        this.renderGridView();
+        this.updateGridQuickFilterButtons();
+        this.updateGridLegendStates();
+      });
+    }
+    if (this.elements.gridQuickFilterShowAll) {
+      this.elements.gridQuickFilterShowAll.addEventListener('click', () => {
+        this.clearFilters();
+        this.renderGridView();
+        this.updateGridQuickFilterButtons();
+        this.updateGridLegendStates();
+      });
+    }
+    
+    // Clear filter button
+    if (this.elements.gridClearFilterBtn) {
+      this.elements.gridClearFilterBtn.addEventListener('click', () => {
+        this.clearFilters();
+        this.renderGridView();
+        this.updateGridQuickFilterButtons();
+        this.updateGridLegendStates();
+        this.updateGridFilterUI();
+      });
+    }
+    
+    // Expand/collapse toggle
+    if (this.elements.gridLegendToggle) {
+      this.elements.gridLegendToggle.addEventListener('click', () => {
+        this.toggleGridLegend();
+      });
+    }
+    
+    // Grid date navigation
+    if (this.elements.gridPrevDay) {
+      this.elements.gridPrevDay.addEventListener('click', () => this.navigateGridDay(-1));
+    }
+    if (this.elements.gridNextDay) {
+      this.elements.gridNextDay.addEventListener('click', () => this.navigateGridDay(1));
+    }
+    
+    // Grid date picker
+    if (this.elements.gridDatePickerBtn) {
+      this.elements.gridDatePickerBtn.addEventListener('click', () => this.toggleGridDatePicker());
+    }
+    if (this.elements.gridPrevMonth) {
+      this.elements.gridPrevMonth.addEventListener('click', () => this.navigateGridMonth(-1));
+    }
+    if (this.elements.gridNextMonth) {
+      this.elements.gridNextMonth.addEventListener('click', () => this.navigateGridMonth(1));
+    }
+    
+    // Close date picker when clicking outside
+    document.addEventListener('click', (e) => {
+      if (this.elements.gridDatePicker && 
+          !this.elements.gridDatePicker.contains(e.target) && 
+          !this.elements.gridDatePickerBtn?.contains(e.target)) {
+        this.closeGridDatePicker();
+      }
+    });
+    
+    // Now button - go to today
+    if (this.elements.gridBtnNow) {
+      this.elements.gridBtnNow.addEventListener('click', () => {
+        const today = this.formatDate(new Date());
+        this.elements.previewDate.value = today;
+        this.updatePreview(); // Update list view too
+        this.renderGridView();
+      });
+    }
+    
+    // Start clock for grid view
+    this.startGridClock();
+  }
+  
+  startGridClock() {
+    this.updateGridClock();
+    this.clockInterval = setInterval(() => this.updateGridClock(), 1000);
+  }
+  
+  updateGridClock() {
+    if (this.elements.gridTimeDisplay) {
+      const now = new Date();
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours % 12 || 12;
+      this.elements.gridTimeDisplay.textContent = `${displayHours}:${String(minutes).padStart(2, '0')} ${ampm}`;
+    }
+  }
+  
+  navigateGridDay(direction) {
+    const currentDate = new Date(this.elements.previewDate.value + 'T12:00:00');
+    currentDate.setDate(currentDate.getDate() + direction);
+    const newDateStr = this.formatDate(currentDate);
+    this.elements.previewDate.value = newDateStr;
+    this.updatePreview(); // Update list view too
+    this.renderGridView();
+  }
+  
+  toggleGridDatePicker() {
+    if (this.gridDatePickerOpen) {
+      this.closeGridDatePicker();
+    } else {
+      this.openGridDatePicker();
+    }
+  }
+  
+  openGridDatePicker() {
+    this.pickerMonth = new Date(this.elements.previewDate.value + 'T12:00:00');
+    this.renderGridDatePicker();
+    if (this.elements.gridDatePicker) {
+      this.elements.gridDatePicker.classList.add('date-picker--open');
+    }
+    this.gridDatePickerOpen = true;
+  }
+  
+  closeGridDatePicker() {
+    if (this.elements.gridDatePicker) {
+      this.elements.gridDatePicker.classList.remove('date-picker--open');
+    }
+    this.gridDatePickerOpen = false;
+  }
+  
+  navigateGridMonth(direction) {
+    this.pickerMonth.setMonth(this.pickerMonth.getMonth() + direction);
+    this.renderGridDatePicker();
+  }
+  
+  renderGridDatePicker() {
+    const year = this.pickerMonth.getFullYear();
+    const month = this.pickerMonth.getMonth();
+    
+    // Update month label
+    const monthName = this.pickerMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    if (this.elements.gridPickerMonth) {
+      this.elements.gridPickerMonth.textContent = monthName;
+    }
+    
+    // Clear days
+    if (!this.elements.gridPickerDays) return;
+    this.elements.gridPickerDays.innerHTML = '';
+    
+    // Get first day of month and total days
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startingDay = firstDay.getDay();
+    const totalDays = lastDay.getDate();
+    
+    // Fill in days from previous month
+    const prevMonth = new Date(year, month, 0);
+    for (let i = startingDay - 1; i >= 0; i--) {
+      const day = prevMonth.getDate() - i;
+      const btn = this.createGridDayButton(new Date(year, month - 1, day), true);
+      this.elements.gridPickerDays.appendChild(btn);
+    }
+    
+    // Fill in current month days
+    for (let day = 1; day <= totalDays; day++) {
+      const date = new Date(year, month, day);
+      const btn = this.createGridDayButton(date, false);
+      this.elements.gridPickerDays.appendChild(btn);
+    }
+    
+    // Fill in days from next month
+    const remainingSlots = 42 - this.elements.gridPickerDays.children.length;
+    for (let day = 1; day <= remainingSlots; day++) {
+      const btn = this.createGridDayButton(new Date(year, month + 1, day), true);
+      this.elements.gridPickerDays.appendChild(btn);
+    }
+  }
+  
+  createGridDayButton(date, isOtherMonth) {
+    const dateStr = this.formatDate(date);
+    const todayStr = this.formatDate(new Date());
+    const selectedDate = this.elements.previewDate.value;
+    
+    const btn = document.createElement('button');
+    btn.className = 'date-picker__day';
+    btn.textContent = date.getDate();
+    
+    if (isOtherMonth) btn.classList.add('date-picker__day--other-month');
+    if (dateStr === todayStr) btn.classList.add('date-picker__day--today');
+    if (dateStr === selectedDate) btn.classList.add('date-picker__day--selected');
+    
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      this.elements.previewDate.value = dateStr;
+      this.closeGridDatePicker();
+      this.updatePreview(); // Update list view too
+      this.renderGridView();
+    });
+    
+    return btn;
+  }
+  
+  switchView(view) {
+    if (this.currentView === view) return;
+    this.currentView = view;
+    
+    // Update toggle button states
+    const buttons = this.elements.viewToggle.querySelectorAll('.view-toggle__btn');
+    buttons.forEach(btn => {
+      btn.classList.toggle('view-toggle__btn--active', btn.dataset.view === view);
+    });
+    
+    // Show/hide views
+    if (view === 'list') {
+      this.elements.listView.style.display = '';
+      this.elements.gridView.style.display = 'none';
+    } else if (view === 'grid') {
+      this.elements.listView.style.display = 'none';
+      this.elements.gridView.style.display = 'block';
+      this.renderGridView();
+    }
+  }
+  
+  // ==========================================
+  // Grid View Methods
+  // ==========================================
+  
+  renderGridView() {
+    const table = this.elements.scheduleGrid;
+    if (!table) return;
+    
+    const date = this.elements.previewDate.value;
+    const hours = this.schedule.getPoolHours(date);
+    
+    // Update date label
+    if (this.elements.gridDateLabel) {
+      const dateObj = new Date(date + 'T12:00:00');
+      this.elements.gridDateLabel.textContent = dateObj.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    }
+    
+    if (!hours) {
+      table.innerHTML = '<tr><td style="padding: 40px; text-align: center; color: var(--text-muted);">No schedule data available for this date.</td></tr>';
+      return;
+    }
+    
+    const layout = this.schedule.getPoolLayout();
+    const sections = layout?.sections || [];
+    const timeSlots = this.generateTimeSlots(hours.open, hours.close, 30);
+    
+    let html = '';
+    
+    // Header Row 1: Pool Section Names
+    html += '<thead>';
+    html += '<tr>';
+    html += '<th class="schedule-grid__section-header" rowspan="2">Time</th>';
+    
+    sections.forEach((section, index) => {
+      const sectionClass = this.getSectionHeaderClass(section.id, index);
+      html += `<th class="schedule-grid__section-header ${sectionClass}" colspan="${section.lanes.length}">${section.name}</th>`;
+    });
+    html += '</tr>';
+    
+    // Header Row 2: Lane Numbers
+    html += '<tr>';
+    sections.forEach(section => {
+      section.lanes.forEach((lane, laneIndex) => {
+        const isLastLane = laneIndex === section.lanes.length - 1;
+        let laneClass = 'schedule-grid__lane-header';
+        if (isLastLane) laneClass += ' schedule-grid__lane-header--section-end';
+        html += `<th class="${laneClass}">${lane}</th>`;
+      });
+    });
+    html += '</tr>';
+    html += '</thead>';
+    
+    // Body Rows: Time slots
+    html += '<tbody>';
+    timeSlots.forEach(slot => {
+      html += `<tr data-time="${slot.minutes}">`;
+      html += `<td class="schedule-grid__time">${slot.label}</td>`;
+      
+      sections.forEach(section => {
+        section.lanes.forEach((lane, laneIndex) => {
+          const laneId = this.parseLaneId(lane);
+          const status = this.schedule.getLaneStatus(date, section.id, laneId, slot.minutes);
+          const isLastLane = laneIndex === section.lanes.length - 1;
+          
+          let cellClass = 'schedule-grid__cell';
+          if (isLastLane) cellClass += ' schedule-grid__cell--section-end';
+          let cellStyle = '';
+          
+          if (status && status.activity) {
+            const activity = status.activity;
+            const isMatch = this.isActivityMatchingFilter(activity.id);
+            
+            cellClass += ' schedule-grid__cell--activity';
+            if (this.activeFilters.length > 0 && !isMatch) {
+              cellClass += ' schedule-grid__cell--dimmed';
+            }
+            cellStyle = `background-color: ${activity.color};`;
+          } else {
+            cellClass += ' schedule-grid__cell--closed';
+          }
+          
+          html += `<td class="${cellClass}" style="${cellStyle}" data-section="${section.id}" data-lane="${lane}" data-time="${slot.minutes}"></td>`;
+        });
+      });
+      
+      html += '</tr>';
+    });
+    html += '</tbody>';
+    
+    table.innerHTML = html;
+    
+    // Add row hover handlers
+    const rows = table.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+      row.addEventListener('mouseenter', () => row.classList.add('schedule-grid__row--hover'));
+      row.addEventListener('mouseleave', () => row.classList.remove('schedule-grid__row--hover'));
+    });
+    
+    // Add tooltip handlers for all cells
+    this.setupGridCellTooltips();
+  }
+  
+  setupGridCellTooltips() {
+    const allCells = this.elements.scheduleGrid.querySelectorAll('.schedule-grid__cell');
+    allCells.forEach(cell => {
+      cell.addEventListener('mouseenter', (e) => this.startGridCellTooltip(e, cell));
+      cell.addEventListener('mousemove', (e) => {
+        if (this.elements.laneTooltip && this.elements.laneTooltip.classList.contains('lane-tooltip--visible')) {
+          this.positionTooltip(e);
+        }
+        this.lastTooltipEvent = e;
+      });
+      cell.addEventListener('mouseleave', () => this.cancelGridCellTooltip());
+    });
+  }
+  
+  startGridCellTooltip(e, cell) {
+    this.lastTooltipEvent = e;
+    this.pendingTooltipCell = cell;
+    
+    if (this.tooltipTimer) {
+      clearTimeout(this.tooltipTimer);
+    }
+    
+    this.tooltipTimer = setTimeout(() => {
+      if (this.pendingTooltipCell === cell) {
+        this.showGridCellTooltip(this.lastTooltipEvent, cell);
+      }
+    }, 500);
+  }
+  
+  cancelGridCellTooltip() {
+    if (this.tooltipTimer) {
+      clearTimeout(this.tooltipTimer);
+      this.tooltipTimer = null;
+    }
+    this.pendingTooltipCell = null;
+    this.hideTooltip();
+  }
+  
+  showGridCellTooltip(e, cell) {
+    const sectionId = cell.dataset.section;
+    const lane = cell.dataset.lane;
+    const timeMinutes = parseInt(cell.dataset.time, 10);
+    const date = this.elements.previewDate.value;
+    
+    const layout = this.schedule.getPoolLayout();
+    const section = layout?.sections?.find(s => s.id === sectionId);
+    const sectionName = section?.name || sectionId;
+    
+    const laneId = this.parseLaneId(lane);
+    const status = this.schedule.getLaneStatus(date, sectionId, laneId, timeMinutes);
+    
+    let html = '';
+    
+    if (status && status.activity) {
+      const activity = status.activity;
+      html = `
+        <div class="lane-tooltip__activity">
+          <span class="lane-tooltip__activity-dot" style="background: ${activity.color}"></span>
+          ${activity.name}
+        </div>
+        <div class="lane-tooltip__time">${this.formatTime(status.entry.start)} - ${this.formatTime(status.entry.end)}</div>
+        <div class="lane-tooltip__location">${sectionName} - Lane ${lane}</div>
+      `;
+    } else {
+      html = `
+        <div class="lane-tooltip__no-match">Closed / No activity</div>
+        <div class="lane-tooltip__location">${sectionName} - Lane ${lane}</div>
+      `;
+    }
+    
+    if (this.elements.laneTooltipContent) {
+      this.elements.laneTooltipContent.innerHTML = html;
+    }
+    if (this.elements.laneTooltip) {
+      this.elements.laneTooltip.classList.add('lane-tooltip--visible');
+    }
+    this.positionTooltip(e);
+  }
+  
+  positionTooltip(e) {
+    if (!this.elements.laneTooltip) return;
+    
+    const tooltip = this.elements.laneTooltip;
+    const offset = 15;
+    
+    let x = e.clientX + offset;
+    let y = e.clientY + offset;
+    
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    if (x + tooltipRect.width > viewportWidth - 10) {
+      x = e.clientX - tooltipRect.width - offset;
+    }
+    if (y + tooltipRect.height > viewportHeight - 10) {
+      y = e.clientY - tooltipRect.height - offset;
+    }
+    
+    tooltip.style.left = `${x}px`;
+    tooltip.style.top = `${y}px`;
+  }
+  
+  hideTooltip() {
+    if (this.elements.laneTooltip) {
+      this.elements.laneTooltip.classList.remove('lane-tooltip--visible');
+    }
+  }
+  
+  toggleGridLegend() {
+    if (this.elements.gridLegendSidebar) {
+      this.elements.gridLegendSidebar.classList.toggle('legend-sidebar--hidden');
+    }
+    if (this.elements.gridLegendToggle) {
+      this.elements.gridLegendToggle.classList.toggle('legend-toggle--collapsed');
+    }
+    if (this.elements.gridView) {
+      this.elements.gridView.classList.toggle('admin-grid-view--expanded');
+    }
+  }
+  
+  generateTimeSlots(startMinutes, endMinutes, intervalMinutes) {
+    const slots = [];
+    for (let minutes = startMinutes; minutes < endMinutes; minutes += intervalMinutes) {
+      slots.push({
+        minutes: minutes,
+        label: this.schedule.minutesToTimeString(minutes)
+      });
+    }
+    return slots;
+  }
+  
+  getSectionHeaderClass(sectionId, index) {
+    const isOddSection = index % 2 === 1;
+    let cls = isOddSection ? 'schedule-grid__section-header--alt' : '';
+    
+    const classMap = {
+      'therapy': 'schedule-grid__section-header--therapy',
+      'instructional': 'schedule-grid__section-header--instructional',
+      'shallow': 'schedule-grid__section-header--shallow',
+      'main': 'schedule-grid__section-header--main',
+      'deep': 'schedule-grid__section-header--deep',
+      'deep_south': 'schedule-grid__section-header--deep-well',
+      'deep_north': 'schedule-grid__section-header--deep-well'
+    };
+    
+    if (classMap[sectionId]) {
+      cls += ' ' + classMap[sectionId];
+    }
+    return cls;
+  }
+  
+  parseLaneId(lane) {
+    const num = parseInt(lane, 10);
+    return isNaN(num) ? lane : num;
+  }
+  
+  isActivityMatchingFilter(activityId) {
+    if (this.activeFilters.length === 0) return true;
+    
+    for (const filter of this.activeFilters) {
+      if (filter.type === 'activity' && filter.id === activityId) return true;
+      if (filter.type === 'category' && filter.activityIds?.includes(activityId)) return true;
+    }
+    return false;
+  }
+  
+  selectOpenSwimFilter() {
+    const categories = this.schedule.getCategories();
+    const openSwimCategory = categories.find(cat => cat.id === 'open');
+    
+    if (openSwimCategory) {
+      const activityIds = this.schedule.getActivitiesByCategory(openSwimCategory.id).map(a => a.id);
+      this.activeFilters = [{
+        type: 'category',
+        id: openSwimCategory.id,
+        name: openSwimCategory.name,
+        activityIds: activityIds
+      }];
+      this.openSwimQuickMode = true;
+    }
+  }
+  
+  clearFilters() {
+    this.activeFilters = [];
+    this.openSwimQuickMode = false;
+  }
+  
+  updateGridQuickFilterButtons() {
+    const isOpenSwimActive = this.openSwimQuickMode;
+    const isAllActive = this.activeFilters.length === 0 || !this.openSwimQuickMode;
+    
+    if (this.elements.gridQuickFilterOpenSwim) {
+      this.elements.gridQuickFilterOpenSwim.classList.toggle('quick-view-toggle__btn--active', isOpenSwimActive);
+    }
+    if (this.elements.gridQuickFilterShowAll) {
+      this.elements.gridQuickFilterShowAll.classList.toggle('quick-view-toggle__btn--active', isAllActive && !isOpenSwimActive);
+    }
+  }
+  
+  renderGridLegend() {
+    const container = this.elements.gridLegendGrid;
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    const activities = this.schedule.getActivities();
+    const categories = this.schedule.getActivityCategories();
+    
+    // Store category groups for filtering
+    this.categoryGroups = {};
+    categories.forEach(cat => {
+      this.categoryGroups[cat.id] = {
+        name: cat.name,
+        activities: activities.filter(a => a.category === cat.id)
+      };
+    });
+    
+    categories.forEach(cat => {
+      const categoryActivities = activities.filter(a => a.category === cat.id);
+      if (categoryActivities.length === 0) return;
+      
+      const card = document.createElement('div');
+      card.className = 'legend-category-card';
+      card.dataset.category = cat.id;
+      
+      const header = document.createElement('div');
+      header.className = 'legend-category__header';
+      header.innerHTML = `
+        <span class="legend-category__title">${cat.name}</span>
+        <span class="legend-category__count">${categoryActivities.length}</span>
+      `;
+      header.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.toggleCategoryFilter(cat.id);
+      });
+      card.appendChild(header);
+      
+      const itemsContainer = document.createElement('div');
+      itemsContainer.className = 'legend-category__items';
+      
+      categoryActivities.forEach(activity => {
+        const item = document.createElement('div');
+        item.className = 'legend-item';
+        item.dataset.activity = activity.id;
+        item.dataset.category = cat.id;
+        item.innerHTML = `
+          <div class="legend-item__color" style="background: ${activity.color}"></div>
+          <span class="legend-item__name">${activity.name}</span>
+        `;
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.toggleActivityFilter(activity.id);
+        });
+        itemsContainer.appendChild(item);
+      });
+      
+      card.appendChild(itemsContainer);
+      container.appendChild(card);
+    });
+    
+    this.updateGridLegendStates();
+  }
+  
+  toggleActivityFilter(activityId) {
+    this.openSwimQuickMode = false;
+    
+    const existingIndex = this.activeFilters.findIndex(
+      f => f.type === 'activity' && f.id === activityId
+    );
+    
+    if (existingIndex !== -1) {
+      this.activeFilters.splice(existingIndex, 1);
+    } else {
+      const activity = this.schedule.getActivity(activityId);
+      this.activeFilters.push({ 
+        type: 'activity', 
+        id: activityId, 
+        name: activity.name 
+      });
+    }
+    
+    this.renderGridView();
+    this.updateGridLegendStates();
+    this.updateGridFilterUI();
+    this.updateGridQuickFilterButtons();
+  }
+  
+  toggleCategoryFilter(categoryId) {
+    this.openSwimQuickMode = false;
+    
+    const existingIndex = this.activeFilters.findIndex(
+      f => f.type === 'category' && f.id === categoryId
+    );
+    
+    if (existingIndex !== -1) {
+      this.activeFilters.splice(existingIndex, 1);
+    } else {
+      const category = this.categoryGroups[categoryId];
+      this.activeFilters.push({ 
+        type: 'category', 
+        id: categoryId, 
+        name: category.name,
+        activityIds: category.activities.map(a => a.id)
+      });
+    }
+    
+    this.renderGridView();
+    this.updateGridLegendStates();
+    this.updateGridFilterUI();
+    this.updateGridQuickFilterButtons();
+  }
+  
+  updateGridLegendStates() {
+    if (!this.elements.gridLegendGrid) return;
+    
+    const cards = this.elements.gridLegendGrid.querySelectorAll('.legend-category-card');
+    const items = this.elements.gridLegendGrid.querySelectorAll('.legend-item');
+    
+    if (this.activeFilters.length === 0) {
+      cards.forEach(card => {
+        card.classList.remove('legend-category-card--active', 'legend-category-card--dimmed', 'legend-category-card--hidden');
+      });
+      items.forEach(item => {
+        item.classList.remove('legend-item--active', 'legend-item--dimmed');
+      });
+      return;
+    }
+    
+    const selectedCategoryIds = new Set(
+      this.activeFilters.filter(f => f.type === 'category').map(f => f.id)
+    );
+    const selectedActivityIds = new Set(
+      this.activeFilters.filter(f => f.type === 'activity').map(f => f.id)
+    );
+    
+    cards.forEach(card => {
+      const isSelected = selectedCategoryIds.has(card.dataset.category);
+      card.classList.toggle('legend-category-card--active', isSelected);
+      card.classList.toggle('legend-category-card--hidden', this.openSwimQuickMode && !isSelected);
+      card.classList.remove('legend-category-card--dimmed');
+    });
+    
+    items.forEach(item => {
+      const activityId = item.dataset.activity;
+      const categoryId = item.dataset.category;
+      
+      const isDirectlySelected = selectedActivityIds.has(activityId);
+      const isInSelectedCategory = selectedCategoryIds.has(categoryId);
+      const isMatching = isDirectlySelected || isInSelectedCategory;
+      
+      item.classList.toggle('legend-item--active', isDirectlySelected);
+      item.classList.toggle('legend-item--dimmed', !isMatching);
+    });
+  }
+  
+  updateGridFilterUI() {
+    if (this.activeFilters.length > 0) {
+      if (this.elements.gridClearFilterBtn) {
+        this.elements.gridClearFilterBtn.classList.remove('legend-sidebar__clear-btn--hidden');
+      }
+    } else {
+      if (this.elements.gridClearFilterBtn) {
+        this.elements.gridClearFilterBtn.classList.add('legend-sidebar__clear-btn--hidden');
+      }
+    }
   }
 }
 

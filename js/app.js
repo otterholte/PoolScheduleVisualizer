@@ -49,32 +49,9 @@ class PoolScheduleApp {
       // Quick filter buttons
       quickFilterOpenSwim: document.getElementById('quickFilterOpenSwim'),
       quickFilterShowAll: document.getElementById('quickFilterShowAll'),
-      // Grid view elements
-      gridView: document.getElementById('gridView'),
-      scheduleGrid: document.getElementById('scheduleGrid'),
-      scheduleGridContainer: document.getElementById('scheduleGridContainer'),
-      gridDateTitle: document.getElementById('gridDateTitle'),
-      gridTimeDisplay: document.getElementById('gridTimeDisplay'),
-      gridBtnNow: document.getElementById('gridBtnNow'),
-      gridLiveIndicator: document.getElementById('gridLiveIndicator'),
-      gridPrevDay: document.getElementById('gridPrevDay'),
-      gridNextDay: document.getElementById('gridNextDay'),
-      gridDatePickerBtn: document.getElementById('gridDatePickerBtn'),
-      gridDatePicker: document.getElementById('gridDatePicker'),
-      gridPickerMonth: document.getElementById('gridPickerMonth'),
-      gridPickerDays: document.getElementById('gridPickerDays'),
-      gridPrevMonth: document.getElementById('gridPrevMonth'),
-      gridNextMonth: document.getElementById('gridNextMonth'),
-      gridLegendToggle: document.getElementById('gridLegendToggle'),
-      gridLegendSidebar: document.getElementById('gridLegendSidebar'),
-      gridLegendGrid: document.getElementById('gridLegendGrid'),
-      gridClearFilterBtn: document.getElementById('gridClearFilterBtn'),
-      gridQuickFilterOpenSwim: document.getElementById('gridQuickFilterOpenSwim'),
-      gridQuickFilterShowAll: document.getElementById('gridQuickFilterShowAll')
+      // List view element
+      listView: document.getElementById('listView')
     };
-    
-    // Grid view state
-    this.gridDatePickerOpen = false;
     
     // Calendar picker state
     this.pickerMonth = new Date();
@@ -86,7 +63,7 @@ class PoolScheduleApp {
     // Track if user dismissed the closed overlay for today
     this.closedOverlayDismissed = false;
     
-    // Current view mode: 'map' or 'grid'
+    // Current view mode: 'map' or 'list'
     this.currentView = 'map';
   }
 
@@ -97,7 +74,6 @@ class PoolScheduleApp {
       this.setupClock();
       this.renderLegend();
       this.setupEventListeners();
-      this.setupGridEventListeners();
       this.updateSliderRange();
       this.updateTimeSlider();
       
@@ -117,9 +93,6 @@ class PoolScheduleApp {
       }
       
       this.updateDisplay();
-      
-      // Pre-render grid legend (will be shown when switching to grid view)
-      this.renderGridLegend();
       
       // Apply view from URL (after rendering is ready)
       if (urlState.view && urlState.view !== 'map') {
@@ -230,13 +203,6 @@ class PoolScheduleApp {
       this.updateLegendStates();
       this.updateQuickFilterButtons();
       
-      // Also update grid view if active
-      if (this.currentView === 'grid') {
-        this.renderGridView();
-        this.updateGridLegendStates();
-        this.updateGridFilterUI();
-      }
-      
       // Update URL
       this.updateURL();
     }
@@ -249,13 +215,6 @@ class PoolScheduleApp {
     this.updateLegendStates();
     this.updateQuickFilterButtons();
     this.updatePoolLanes();
-    
-    // Also update grid view if active
-    if (this.currentView === 'grid') {
-      this.renderGridView();
-      this.updateGridLegendStates();
-      this.updateGridFilterUI();
-    }
     
     // Update URL
     this.updateURL();
@@ -406,13 +365,6 @@ class PoolScheduleApp {
     this.updateFilterUI();
     this.updateLegendStates();
     this.updateDisplay();
-    
-    // Also update grid view if active
-    if (this.currentView === 'grid') {
-      this.renderGridView();
-      this.updateGridLegendStates();
-      this.updateGridFilterUI();
-    }
   }
 
   toggleCategoryFilter(categoryId) {
@@ -439,13 +391,6 @@ class PoolScheduleApp {
     this.updateFilterUI();
     this.updateLegendStates();
     this.updateDisplay();
-    
-    // Also update grid view if active
-    if (this.currentView === 'grid') {
-      this.renderGridView();
-      this.updateGridLegendStates();
-      this.updateGridFilterUI();
-    }
   }
 
   clearFilter() {
@@ -454,13 +399,6 @@ class PoolScheduleApp {
     this.updateFilterUI();
     this.updateLegendStates();
     this.updateDisplay();
-    
-    // Also update grid view if active
-    if (this.currentView === 'grid') {
-      this.renderGridView();
-      this.updateGridLegendStates();
-      this.updateGridFilterUI();
-    }
     
     // Update URL
     this.updateURL();
@@ -652,20 +590,17 @@ class PoolScheduleApp {
     
     // Get the main content containers
     const mapView = document.querySelector('.main-content');
-    const gridView = document.getElementById('gridView');
+    const listView = document.getElementById('listView');
     
     if (view === 'map') {
       if (mapView) mapView.style.display = '';
-      if (gridView) gridView.style.display = 'none';
+      if (listView) listView.style.display = 'none';
       // Update map display when switching back
       this.updateDisplay();
-    } else if (view === 'grid') {
+    } else if (view === 'list') {
       if (mapView) mapView.style.display = 'none';
-      if (gridView) gridView.style.display = 'flex';
-      // Render grid view
-      this.renderGridView();
-      this.updateGridLegendStates();
-      this.updateGridFilterUI();
+      if (listView) listView.style.display = 'flex';
+      // List view will be implemented later
     }
     
     // Update URL with new view
@@ -798,11 +733,6 @@ class PoolScheduleApp {
     this.selectedDate = dateStr;
     this.updateSliderRange();
     this.updateDisplay();
-    
-    // Also update grid view if active
-    if (this.currentView === 'grid') {
-      this.renderGridView();
-    }
   }
 
   updateSliderRange() {
@@ -1298,715 +1228,6 @@ class PoolScheduleApp {
   parseLaneId(lane) {
     const num = parseInt(lane, 10);
     return isNaN(num) ? lane : num;
-  }
-
-  // ==========================================
-  // Grid View Methods
-  // ==========================================
-  
-  /**
-   * Render the full day grid schedule
-   */
-  renderGridView() {
-    const table = this.elements.scheduleGrid;
-    if (!table) return;
-    
-    // Get pool hours for the selected date
-    const hours = this.schedule.getPoolHours(this.selectedDate);
-    if (!hours) {
-      table.innerHTML = '<tr><td style="padding: 40px; text-align: center; color: var(--text-muted);">No schedule data available for this date.</td></tr>';
-      return;
-    }
-    
-    // Get sections from pool layout
-    const layout = this.schedule.getPoolLayout();
-    const sections = layout?.sections || [];
-    
-    // Generate time slots (30-minute increments)
-    const timeSlots = this.generateTimeSlots(hours.open, hours.close, 30);
-    
-    // Get current time for highlighting
-    const today = this.formatDate(new Date());
-    const isViewingToday = this.selectedDate === today;
-    const currentTimeMinutes = this.getCurrentTimeMinutes();
-    
-    // Build the table HTML
-    let html = '';
-    
-    // Header Row 1: Pool Section Names
-    html += '<thead>';
-    html += '<tr>';
-    html += '<th class="schedule-grid__section-header" rowspan="2">Time</th>';
-    
-    sections.forEach(section => {
-      const sectionClass = this.getSectionHeaderClass(section.id);
-      html += `<th class="schedule-grid__section-header ${sectionClass}" colspan="${section.lanes.length}">${section.name}</th>`;
-    });
-    html += '</tr>';
-    
-    // Header Row 2: Lane Numbers
-    html += '<tr>';
-    sections.forEach((section, sectionIndex) => {
-      section.lanes.forEach((lane, laneIndex) => {
-        const isLastLane = laneIndex === section.lanes.length - 1;
-        let laneClass = 'schedule-grid__lane-header';
-        if (isLastLane) laneClass += ' schedule-grid__lane-header--section-end';
-        html += `<th class="${laneClass}">${lane}</th>`;
-      });
-    });
-    html += '</tr>';
-    html += '</thead>';
-    
-    // Body Rows: Time slots
-    html += '<tbody>';
-    timeSlots.forEach((slot, rowIndex) => {
-      const isCurrentRow = isViewingToday && 
-        currentTimeMinutes >= slot.minutes && 
-        currentTimeMinutes < slot.minutes + 30;
-      
-      const rowClass = isCurrentRow ? 'schedule-grid__row--current' : '';
-      html += `<tr class="${rowClass}" data-time="${slot.minutes}">`;
-      
-      // Time column
-      html += `<td class="schedule-grid__time">${slot.label}</td>`;
-      
-      // Lane cells
-      sections.forEach(section => {
-        section.lanes.forEach((lane, laneIndex) => {
-          const laneId = this.parseLaneId(lane);
-          const status = this.schedule.getLaneStatus(this.selectedDate, section.id, laneId, slot.minutes);
-          const isLastLane = laneIndex === section.lanes.length - 1;
-          
-          let cellClass = 'schedule-grid__cell';
-          if (isLastLane) cellClass += ' schedule-grid__cell--section-end';
-          let cellStyle = '';
-          let cellContent = '';
-          let cellTitle = '';
-          
-          if (status && status.activity) {
-            const activity = status.activity;
-            const isMatch = this.isActivityMatchingFilter(activity.id);
-            
-            cellClass += ' schedule-grid__cell--activity';
-            if (this.activeFilters.length > 0 && !isMatch) {
-              cellClass += ' schedule-grid__cell--dimmed';
-            }
-            
-            cellStyle = `background-color: ${activity.color};`;
-            cellTitle = ''; // Use custom tooltip instead
-            
-            // Show start time ONLY if it doesn't align with 30-minute grid intervals
-            // (i.e., only show if starts at :15 or :45)
-            const activityStart = this.schedule.timeToMinutes(status.entry.start);
-            const startsOffGrid = (activityStart % 30) !== 0;
-            
-            // Show time label ONLY if activity starts off-grid (:15 or :45)
-            // When time is on-grid (:00 or :30), don't show - it's obvious from the row
-            if (startsOffGrid && slot.minutes <= activityStart && slot.minutes + 30 > activityStart) {
-              cellContent = `<span class="schedule-grid__start-time">${this.formatTimeCompact(status.entry.start)}</span>`;
-            }
-          } else {
-            cellClass += ' schedule-grid__cell--closed';
-            cellTitle = ''; // Use custom tooltip instead
-          }
-          
-          html += `<td class="${cellClass}" style="${cellStyle}" title="${cellTitle}" data-section="${section.id}" data-lane="${lane}" data-time="${slot.minutes}">${cellContent}</td>`;
-        });
-      });
-      
-      html += '</tr>';
-    });
-    html += '</tbody>';
-    
-    table.innerHTML = html;
-    
-    // Add click handlers to cells
-    this.setupGridCellHandlers();
-    
-    // Scroll to current time if viewing today
-    if (isViewingToday) {
-      this.scrollToCurrentTime();
-    }
-    
-    // Update grid header displays
-    this.updateGridHeader();
-  }
-  
-  /**
-   * Generate time slots for the grid
-   */
-  generateTimeSlots(startMinutes, endMinutes, intervalMinutes) {
-    const slots = [];
-    for (let minutes = startMinutes; minutes < endMinutes; minutes += intervalMinutes) {
-      slots.push({
-        minutes: minutes,
-        label: this.schedule.minutesToTimeString(minutes)
-      });
-    }
-    return slots;
-  }
-  
-  /**
-   * Get CSS class for section header based on section ID
-   */
-  getSectionHeaderClass(sectionId) {
-    const classMap = {
-      'therapy': 'schedule-grid__section-header--therapy',
-      'instructional': 'schedule-grid__section-header--instructional',
-      'shallow': 'schedule-grid__section-header--shallow',
-      'main': 'schedule-grid__section-header--main',
-      'deep': 'schedule-grid__section-header--deep',
-      'deep_south': 'schedule-grid__section-header--deep-well',
-      'deep_north': 'schedule-grid__section-header--deep-well'
-    };
-    return classMap[sectionId] || '';
-  }
-  
-  /**
-   * Format time in compact format (e.g., "6:30")
-   */
-  formatTimeCompact(timeStr) {
-    if (!timeStr) return '';
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    const hour12 = hours % 12 || 12;
-    return minutes === 0 ? `${hour12}` : `${hour12}:${String(minutes).padStart(2, '0')}`;
-  }
-  
-  /**
-   * Setup click handlers for grid cells
-   */
-  setupGridCellHandlers() {
-    const cells = this.elements.scheduleGrid.querySelectorAll('.schedule-grid__cell--activity');
-    cells.forEach(cell => {
-      cell.addEventListener('click', (e) => {
-        const section = cell.dataset.section;
-        const lane = cell.dataset.lane;
-        const timeMinutes = parseInt(cell.dataset.time, 10);
-        
-        // Temporarily set selected time to this cell's time for modal
-        const originalTime = this.selectedTimeMinutes;
-        this.selectedTimeMinutes = timeMinutes;
-        
-        this.showLaneDetails(section, lane);
-        
-        // Restore original time
-        this.selectedTimeMinutes = originalTime;
-      });
-    });
-    
-    // Add row hover highlighting for all rows
-    const rows = this.elements.scheduleGrid.querySelectorAll('tbody tr');
-    rows.forEach(row => {
-      row.addEventListener('mouseenter', () => {
-        row.classList.add('schedule-grid__row--hover');
-      });
-      row.addEventListener('mouseleave', () => {
-        row.classList.remove('schedule-grid__row--hover');
-      });
-    });
-    
-    // Add tooltip handlers for all cells
-    const allCells = this.elements.scheduleGrid.querySelectorAll('.schedule-grid__cell');
-    allCells.forEach(cell => {
-      cell.addEventListener('mouseenter', (e) => this.startGridCellTooltip(e, cell));
-      cell.addEventListener('mousemove', (e) => {
-        if (this.elements.laneTooltip.classList.contains('lane-tooltip--visible')) {
-          this.positionTooltip(e);
-        }
-        this.lastTooltipEvent = e; // Store for delayed show
-      });
-      cell.addEventListener('mouseleave', () => this.cancelGridCellTooltip());
-    });
-  }
-  
-  /**
-   * Start tooltip timer for grid cell (delays showing)
-   */
-  startGridCellTooltip(e, cell) {
-    this.lastTooltipEvent = e;
-    this.pendingTooltipCell = cell;
-    
-    // Clear any existing timer
-    if (this.tooltipTimer) {
-      clearTimeout(this.tooltipTimer);
-    }
-    
-    // Delay tooltip by 500ms (similar to native tooltips)
-    this.tooltipTimer = setTimeout(() => {
-      if (this.pendingTooltipCell === cell) {
-        this.showGridCellTooltip(this.lastTooltipEvent, cell);
-      }
-    }, 500);
-  }
-  
-  /**
-   * Cancel pending tooltip
-   */
-  cancelGridCellTooltip() {
-    if (this.tooltipTimer) {
-      clearTimeout(this.tooltipTimer);
-      this.tooltipTimer = null;
-    }
-    this.pendingTooltipCell = null;
-    this.hideLaneTooltip();
-  }
-  
-  /**
-   * Show custom tooltip for grid cell
-   */
-  showGridCellTooltip(e, cell) {
-    const sectionId = cell.dataset.section;
-    const lane = cell.dataset.lane;
-    const timeMinutes = parseInt(cell.dataset.time, 10);
-    
-    // Get section info
-    const layout = this.schedule.getPoolLayout();
-    const section = layout?.sections?.find(s => s.id === sectionId);
-    const sectionName = section?.name || sectionId;
-    
-    // Get activity status
-    const laneId = this.parseLaneId(lane);
-    const status = this.schedule.getLaneStatus(this.selectedDate, sectionId, laneId, timeMinutes);
-    
-    let html = '';
-    
-    if (status && status.activity) {
-      const activity = status.activity;
-      html = `
-        <div class="lane-tooltip__activity">
-          <span class="lane-tooltip__activity-dot" style="background: ${activity.color}"></span>
-          ${activity.name}
-        </div>
-        <div class="lane-tooltip__time">${this.formatTimeAMPM(status.entry.start)} - ${this.formatTimeAMPM(status.entry.end)}</div>
-        <div class="lane-tooltip__location">${sectionName} - Lane ${lane}</div>
-      `;
-    } else {
-      html = `
-        <div class="lane-tooltip__no-match">Closed / No activity</div>
-        <div class="lane-tooltip__location">${sectionName} - Lane ${lane}</div>
-      `;
-    }
-    
-    this.elements.laneTooltipContent.innerHTML = html;
-    this.elements.laneTooltip.classList.add('lane-tooltip--visible');
-    this.positionTooltip(e);
-  }
-  
-  /**
-   * Scroll grid to current time row
-   */
-  scrollToCurrentTime() {
-    const container = this.elements.scheduleGridContainer;
-    const currentRow = this.elements.scheduleGrid.querySelector('.schedule-grid__row--current');
-    
-    if (container && currentRow) {
-      // Scroll so current time is roughly in the upper third of visible area
-      const containerHeight = container.clientHeight;
-      const rowTop = currentRow.offsetTop;
-      const scrollTarget = rowTop - (containerHeight / 4);
-      
-      container.scrollTo({
-        top: Math.max(0, scrollTarget),
-        behavior: 'smooth'
-      });
-    }
-  }
-  
-  /**
-   * Update grid header with current date and time info
-   */
-  updateGridHeader() {
-    const today = this.formatDate(new Date());
-    const isViewingToday = this.selectedDate === today;
-    const currentTimeMinutes = this.getCurrentTimeMinutes();
-    const poolHours = this.schedule.getPoolHours(this.selectedDate);
-    
-    // Update date title
-    const date = new Date(this.selectedDate + 'T12:00:00');
-    const dateDisplay = date.toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-    if (this.elements.gridDateTitle) {
-      this.elements.gridDateTitle.textContent = dateDisplay;
-    }
-    
-    // Update time display
-    const timeStr = this.schedule.minutesToTimeString(currentTimeMinutes);
-    if (this.elements.gridTimeDisplay) {
-      this.elements.gridTimeDisplay.textContent = timeStr;
-    }
-    
-    // Update live indicator
-    const isPoolOpen = poolHours && currentTimeMinutes >= poolHours.open && currentTimeMinutes < poolHours.close;
-    if (this.elements.gridLiveIndicator) {
-      if (isViewingToday && isPoolOpen) {
-        this.elements.gridLiveIndicator.classList.add('time-now-btn__live--active');
-      } else {
-        this.elements.gridLiveIndicator.classList.remove('time-now-btn__live--active');
-      }
-    }
-  }
-  
-  /**
-   * Setup grid-specific event listeners
-   */
-  setupGridEventListeners() {
-    // Grid date navigation
-    if (this.elements.gridPrevDay) {
-      this.elements.gridPrevDay.addEventListener('click', () => this.navigateDay(-1));
-    }
-    if (this.elements.gridNextDay) {
-      this.elements.gridNextDay.addEventListener('click', () => this.navigateDay(1));
-    }
-    
-    // Grid date picker
-    if (this.elements.gridDatePickerBtn) {
-      this.elements.gridDatePickerBtn.addEventListener('click', () => this.toggleGridDatePicker());
-    }
-    if (this.elements.gridPrevMonth) {
-      this.elements.gridPrevMonth.addEventListener('click', () => this.navigateMonth(-1));
-    }
-    if (this.elements.gridNextMonth) {
-      this.elements.gridNextMonth.addEventListener('click', () => this.navigateMonth(1));
-    }
-    
-    // Close grid date picker when clicking outside
-    document.addEventListener('click', (e) => {
-      if (this.elements.gridDatePicker && 
-          !this.elements.gridDatePicker.contains(e.target) && 
-          !this.elements.gridDatePickerBtn?.contains(e.target)) {
-        this.closeGridDatePicker();
-      }
-    });
-    
-    // Grid Now button - scroll to current time
-    if (this.elements.gridBtnNow) {
-      this.elements.gridBtnNow.addEventListener('click', () => {
-        this.selectedDate = this.formatDate(new Date());
-        this.renderGridView();
-        this.renderGridLegend();
-        this.updateGridQuickFilterButtons();
-      });
-    }
-    
-    // Grid legend toggle
-    if (this.elements.gridLegendToggle) {
-      this.elements.gridLegendToggle.addEventListener('click', () => this.toggleGridLegend());
-    }
-    
-    // Grid quick filter buttons
-    if (this.elements.gridQuickFilterOpenSwim) {
-      this.elements.gridQuickFilterOpenSwim.addEventListener('click', () => {
-        this.selectOpenSwimFilter();
-        if (this.currentView === 'grid') {
-          this.renderGridView();
-          this.updateGridLegendStates();
-        }
-      });
-    }
-    if (this.elements.gridQuickFilterShowAll) {
-      this.elements.gridQuickFilterShowAll.addEventListener('click', () => {
-        this.clearAllFilters();
-        if (this.currentView === 'grid') {
-          this.renderGridView();
-        }
-      });
-    }
-    
-    // Grid clear filter button
-    if (this.elements.gridClearFilterBtn) {
-      this.elements.gridClearFilterBtn.addEventListener('click', () => {
-        this.clearFilter();
-        if (this.currentView === 'grid') {
-          this.renderGridView();
-        }
-      });
-    }
-  }
-  
-  /**
-   * Toggle grid date picker
-   */
-  toggleGridDatePicker() {
-    if (this.gridDatePickerOpen) {
-      this.closeGridDatePicker();
-    } else {
-      this.openGridDatePicker();
-    }
-  }
-  
-  openGridDatePicker() {
-    this.pickerMonth = new Date(this.selectedDate + 'T12:00:00');
-    this.renderGridDatePicker();
-    if (this.elements.gridDatePicker) {
-      this.elements.gridDatePicker.classList.add('date-picker--open');
-    }
-    this.gridDatePickerOpen = true;
-  }
-  
-  closeGridDatePicker() {
-    if (this.elements.gridDatePicker) {
-      this.elements.gridDatePicker.classList.remove('date-picker--open');
-    }
-    this.gridDatePickerOpen = false;
-  }
-  
-  renderGridDatePicker() {
-    const year = this.pickerMonth.getFullYear();
-    const month = this.pickerMonth.getMonth();
-    
-    // Update month label
-    const monthName = this.pickerMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    if (this.elements.gridPickerMonth) {
-      this.elements.gridPickerMonth.textContent = monthName;
-    }
-    
-    // Clear days
-    if (!this.elements.gridPickerDays) return;
-    this.elements.gridPickerDays.innerHTML = '';
-    
-    // Get first day of month and total days
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const startingDay = firstDay.getDay();
-    const totalDays = lastDay.getDate();
-    
-    // Fill in days from previous month
-    const prevMonth = new Date(year, month, 0);
-    for (let i = startingDay - 1; i >= 0; i--) {
-      const day = prevMonth.getDate() - i;
-      const btn = this.createGridDayButton(new Date(year, month - 1, day), true);
-      this.elements.gridPickerDays.appendChild(btn);
-    }
-    
-    // Fill in current month days
-    for (let day = 1; day <= totalDays; day++) {
-      const date = new Date(year, month, day);
-      const btn = this.createGridDayButton(date, false);
-      this.elements.gridPickerDays.appendChild(btn);
-    }
-    
-    // Fill in days from next month
-    const remainingSlots = 42 - this.elements.gridPickerDays.children.length;
-    for (let day = 1; day <= remainingSlots; day++) {
-      const btn = this.createGridDayButton(new Date(year, month + 1, day), true);
-      this.elements.gridPickerDays.appendChild(btn);
-    }
-  }
-  
-  createGridDayButton(date, isOtherMonth) {
-    const dateStr = this.formatDate(date);
-    const todayStr = this.formatDate(new Date());
-    
-    const btn = document.createElement('button');
-    btn.className = 'date-picker__day';
-    btn.textContent = date.getDate();
-    
-    if (isOtherMonth) btn.classList.add('date-picker__day--other-month');
-    if (dateStr === todayStr) btn.classList.add('date-picker__day--today');
-    if (dateStr === this.selectedDate) btn.classList.add('date-picker__day--selected');
-    
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      this.selectDate(dateStr);
-      this.closeGridDatePicker();
-      if (this.currentView === 'grid') {
-        this.renderGridView();
-      }
-    });
-    
-    return btn;
-  }
-  
-  /**
-   * Toggle grid legend sidebar
-   */
-  toggleGridLegend() {
-    if (this.elements.gridLegendSidebar) {
-      this.elements.gridLegendSidebar.classList.toggle('legend-sidebar--hidden');
-    }
-    if (this.elements.gridLegendToggle) {
-      this.elements.gridLegendToggle.classList.toggle('legend-toggle--collapsed');
-    }
-    // Toggle expanded mode for grid view (legend hidden)
-    if (this.elements.gridView) {
-      this.elements.gridView.classList.toggle('grid-view--expanded');
-    }
-  }
-  
-  /**
-   * Render the legend for grid view
-   */
-  renderGridLegend() {
-    const container = this.elements.gridLegendGrid;
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    const activities = this.schedule.getActivities();
-    const categories = this.schedule.getActivityCategories();
-    
-    // Build category groups
-    const categoryGroups = {};
-    categories.forEach(cat => {
-      categoryGroups[cat.id] = {
-        name: cat.name,
-        activities: activities
-          .filter(a => a.category === cat.id)
-          .sort((a, b) => a.name.localeCompare(b.name))
-      };
-    });
-    
-    // Render each category
-    categories.forEach(cat => {
-      const group = categoryGroups[cat.id];
-      if (group.activities.length === 0) return;
-      
-      const card = document.createElement('div');
-      card.className = 'legend-category-card';
-      card.dataset.category = cat.id;
-      
-      // Category header
-      const header = document.createElement('div');
-      header.className = 'legend-category__header';
-      header.innerHTML = `
-        <span class="legend-category__title">${group.name}</span>
-        <span class="legend-category__count">${group.activities.length}</span>
-      `;
-      header.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.toggleCategoryFilter(cat.id);
-        if (this.currentView === 'grid') {
-          this.renderGridView();
-          this.updateGridLegendStates();
-          this.updateGridFilterUI();
-        }
-      });
-      card.appendChild(header);
-      
-      // Items container
-      const itemsContainer = document.createElement('div');
-      itemsContainer.className = 'legend-category__items';
-      
-      group.activities.forEach(activity => {
-        const item = document.createElement('div');
-        item.className = 'legend-item';
-        item.dataset.activity = activity.id;
-        item.dataset.category = cat.id;
-        item.innerHTML = `
-          <div class="legend-item__color" style="background: ${activity.color}"></div>
-          <span class="legend-item__name">${activity.name}</span>
-        `;
-        item.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.toggleActivityFilter(activity.id);
-          if (this.currentView === 'grid') {
-            this.renderGridView();
-            this.updateGridLegendStates();
-            this.updateGridFilterUI();
-          }
-        });
-        itemsContainer.appendChild(item);
-      });
-      
-      card.appendChild(itemsContainer);
-      container.appendChild(card);
-    });
-    
-    this.updateGridLegendStates();
-    this.updateGridFilterUI();
-    this.updateGridQuickFilterButtons();
-  }
-  
-  /**
-   * Update legend states for grid view
-   */
-  updateGridLegendStates() {
-    if (!this.elements.gridLegendGrid) return;
-    
-    const cards = this.elements.gridLegendGrid.querySelectorAll('.legend-category-card');
-    const items = this.elements.gridLegendGrid.querySelectorAll('.legend-item');
-    
-    if (this.activeFilters.length === 0) {
-      cards.forEach(card => {
-        card.classList.remove('legend-category-card--active', 'legend-category-card--dimmed', 'legend-category-card--hidden');
-      });
-      items.forEach(item => {
-        item.classList.remove('legend-item--active', 'legend-item--dimmed');
-      });
-      return;
-    }
-    
-    const selectedCategoryIds = new Set(
-      this.activeFilters.filter(f => f.type === 'category').map(f => f.id)
-    );
-    const selectedActivityIds = new Set(
-      this.activeFilters.filter(f => f.type === 'activity').map(f => f.id)
-    );
-    
-    cards.forEach(card => {
-      const isSelected = selectedCategoryIds.has(card.dataset.category);
-      card.classList.toggle('legend-category-card--active', isSelected);
-      card.classList.toggle('legend-category-card--hidden', this.openSwimQuickMode && !isSelected);
-      card.classList.remove('legend-category-card--dimmed');
-    });
-    
-    items.forEach(item => {
-      const activityId = item.dataset.activity;
-      const categoryId = item.dataset.category;
-      
-      const isDirectlySelected = selectedActivityIds.has(activityId);
-      const isInSelectedCategory = selectedCategoryIds.has(categoryId);
-      const isMatching = isDirectlySelected || isInSelectedCategory;
-      
-      item.classList.toggle('legend-item--active', isDirectlySelected);
-      item.classList.toggle('legend-item--dimmed', !isMatching);
-    });
-  }
-  
-  /**
-   * Update filter UI for grid view
-   */
-  updateGridFilterUI() {
-    const filterValue = document.getElementById('gridFilterValue');
-    if (filterValue) {
-      if (this.activeFilters.length > 0) {
-        const names = this.activeFilters.map(f => f.name);
-        if (names.length <= 2) {
-          filterValue.textContent = names.join(', ');
-        } else {
-          filterValue.textContent = `${names.length} selected`;
-        }
-        if (this.elements.gridClearFilterBtn) {
-          this.elements.gridClearFilterBtn.classList.remove('legend-sidebar__clear-btn--hidden');
-        }
-      } else {
-        filterValue.textContent = '';
-        if (this.elements.gridClearFilterBtn) {
-          this.elements.gridClearFilterBtn.classList.add('legend-sidebar__clear-btn--hidden');
-        }
-      }
-    }
-    
-    this.updateGridQuickFilterButtons();
-  }
-  
-  /**
-   * Update quick filter buttons for grid view
-   */
-  updateGridQuickFilterButtons() {
-    const isOpenSwimQuickActive = this.openSwimQuickMode;
-    const isAllActive = this.activeFilters.length === 0 || !this.openSwimQuickMode;
-    
-    if (this.elements.gridQuickFilterOpenSwim) {
-      this.elements.gridQuickFilterOpenSwim.classList.toggle('quick-view-toggle__btn--active', isOpenSwimQuickActive);
-    }
-    if (this.elements.gridQuickFilterShowAll) {
-      this.elements.gridQuickFilterShowAll.classList.toggle('quick-view-toggle__btn--active', isAllActive && !isOpenSwimQuickActive);
-    }
   }
 }
 
