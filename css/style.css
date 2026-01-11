@@ -1111,9 +1111,10 @@ body::before {
 .modal__header {
   background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
   padding: 20px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 4px 16px;
   color: white;
 }
 
@@ -1121,6 +1122,16 @@ body::before {
   font-family: var(--font-display);
   font-size: 1.25rem;
   font-weight: 600;
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.modal__subtitle {
+  font-size: 0.85rem;
+  opacity: 0.85;
+  grid-column: 1;
+  grid-row: 2;
+  margin: 0;
 }
 
 .modal__close {
@@ -1136,6 +1147,9 @@ body::before {
   align-items: center;
   justify-content: center;
   transition: background var(--transition-fast);
+  grid-column: 2;
+  grid-row: 1 / 3;
+  align-self: center;
 }
 
 .modal__close:hover {
@@ -1203,6 +1217,13 @@ body::before {
   animation: pulse-now 2s infinite;
 }
 
+.schedule-item__badge--selected {
+  background: rgba(148, 163, 184, 0.2);
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
 @keyframes pulse-now {
   0%, 100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4); }
   50% { box-shadow: 0 0 0 4px rgba(6, 182, 212, 0); }
@@ -1214,10 +1235,11 @@ body::before {
   color: var(--accent-green);
 }
 
-/* Current activity highlight */
+/* Current activity highlight - always full opacity */
 .schedule-item--current {
   border-color: var(--accent-cyan);
   box-shadow: 0 0 0 1px var(--accent-cyan), 0 0 12px rgba(6, 182, 212, 0.2);
+  opacity: 1 !important;
 }
 
 /* Selected filter match */
@@ -1225,9 +1247,9 @@ body::before {
   border-color: var(--accent-green);
 }
 
-/* Past activities - subtle fade */
+/* Past activities - faded */
 .schedule-item--past {
-  opacity: 0.5;
+  opacity: 0.3;
 }
 
 /* Separator between past and current/future */
@@ -1256,7 +1278,7 @@ body::before {
 
 /* Dimmed when filters active but not matching (future only) */
 .schedule-item--dimmed {
-  opacity: 0.35;
+  opacity: 0.45;
 }
 
 /* Both current and selected */

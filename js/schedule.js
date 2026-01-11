@@ -96,6 +96,7 @@ class ScheduleManager {
    */
   getLaneStatus(dateStr, sectionId, lane, timeMinutes) {
     const schedule = this.getScheduleForDate(dateStr);
+    let lastEndingEvent = null;
     
     for (const entry of schedule) {
       if (entry.section !== sectionId) continue;
@@ -104,12 +105,27 @@ class ScheduleManager {
       const startMinutes = this.timeToMinutes(entry.start);
       const endMinutes = this.timeToMinutes(entry.end);
       
+      // Check if time is within this event
       if (timeMinutes >= startMinutes && timeMinutes < endMinutes) {
         return {
           activity: this.getActivity(entry.activity),
           entry: entry
         };
       }
+      
+      // Track events that end exactly at this time (for end-of-day edge case)
+      if (endMinutes === timeMinutes) {
+        lastEndingEvent = entry;
+      }
+    }
+    
+    // If no current event but there's one that just ended, show that
+    // This handles the closing time edge case (e.g., slider at 6pm shows 5:59pm activity)
+    if (lastEndingEvent) {
+      return {
+        activity: this.getActivity(lastEndingEvent.activity),
+        entry: lastEndingEvent
+      };
     }
     
     return null;

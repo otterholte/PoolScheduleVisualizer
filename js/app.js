@@ -29,6 +29,7 @@ class PoolScheduleApp {
       clearFilterBtn: document.getElementById('clearFilterBtn'),
       modalOverlay: document.getElementById('modalOverlay'),
       modalTitle: document.getElementById('modalTitle'),
+      modalSubtitle: document.getElementById('modalSubtitle'),
       modalContent: document.getElementById('modalContent'),
       modalClose: document.getElementById('modalClose'),
       laneTooltip: document.getElementById('laneTooltip'),
@@ -584,6 +585,7 @@ class PoolScheduleApp {
     // Reset styles
     laneEl.style.opacity = '1';
     laneEl.style.filter = '';
+    laneEl.setAttribute('fill-opacity', '1'); // Ensure fill is visible
     
     if (!status) {
       // No activity - closed/unavailable
@@ -618,6 +620,13 @@ class PoolScheduleApp {
     const sectionName = section?.name || sectionId;
     this.elements.modalTitle.textContent = `${sectionName} - Lane ${lane}`;
     
+    // Set subtitle with viewing date and time
+    const viewingDate = new Date(this.selectedDate + 'T12:00:00');
+    const dateOptions = { weekday: 'long', month: 'long', day: 'numeric' };
+    const formattedDate = viewingDate.toLocaleDateString('en-US', dateOptions);
+    const formattedTime = this.formatTimeAMPM(this.schedule.minutesToTimeString(this.selectedTimeMinutes));
+    this.elements.modalSubtitle.textContent = `Viewing: ${formattedDate} at ${formattedTime}`;
+    
     if (laneSchedule.length === 0) {
       this.elements.modalContent.innerHTML = `
         <div style="text-align: center; padding: 30px; color: var(--text-muted);">
@@ -629,6 +638,7 @@ class PoolScheduleApp {
       const scrubberTime = this.selectedTimeMinutes;
       const actualCurrentTime = this.getCurrentTimeMinutes();
       const isViewingToday = this.selectedDate === this.formatDate(new Date());
+      const isLiveNow = isViewingToday && scrubberTime === actualCurrentTime;
       const selectedActivityIds = this.getSelectedActivityIds();
       const hasFilters = selectedActivityIds.length > 0;
       
@@ -661,9 +671,15 @@ class PoolScheduleApp {
         // Only dim future non-matches when filters are active
         if (hasFilters && !matchesFilter && !isPast) itemClass += ' schedule-item--dimmed';
         
-        // Build badges - show both NOW and MATCH if applicable
+        // Build badges - NOW only for live current time, SELECTED for other times
         let badges = '';
-        if (isCurrent) badges += '<span class="schedule-item__badge schedule-item__badge--now">NOW</span>';
+        if (isCurrent) {
+          if (isLiveNow) {
+            badges += '<span class="schedule-item__badge schedule-item__badge--now">NOW</span>';
+          } else {
+            badges += '<span class="schedule-item__badge schedule-item__badge--selected">SELECTED</span>';
+          }
+        }
         if (showMatch) badges += '<span class="schedule-item__badge schedule-item__badge--match">MATCH</span>';
         
         // Add separator before first non-past item when viewing today
