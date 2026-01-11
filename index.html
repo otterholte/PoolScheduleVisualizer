@@ -433,35 +433,64 @@
     <!-- List View - Activity Finder -->
     <div id="listView" class="list-view" style="display: none;">
       <div class="list-view__container">
-        <!-- Activity Selector -->
-        <div class="activity-selector" id="activitySelector">
-          <div class="activity-selector__header">
-            <h2 class="activity-selector__title">Find Your Activity</h2>
-            <p class="activity-selector__subtitle">Select an activity to see upcoming times over the next 10 days</p>
+        
+        <!-- Activity Selector - Pill Badge Style -->
+        <div class="activity-finder" id="activityFinder">
+          <p class="activity-finder__prompt">What are you looking for?</p>
+          <div class="category-pills" id="categoryPills">
+            <!-- Category pills rendered by JS -->
           </div>
-          <div class="activity-selector__grid" id="activitySelectorGrid">
-            <!-- Activity cards will be rendered here -->
+          <!-- Dropdown menu for activities -->
+          <div class="activity-dropdown" id="activityDropdown">
+            <div class="activity-dropdown__list" id="activityDropdownList">
+              <!-- Activities rendered by JS on category hover -->
+            </div>
           </div>
         </div>
         
-        <!-- Results Section (hidden until activity selected) -->
+        <!-- Results Section - Concept C Style -->
         <div class="activity-results" id="activityResults" style="display: none;">
+          <!-- Header with back button and activity name -->
           <div class="activity-results__header">
-            <button class="activity-results__back" id="activityResultsBack" title="Back to activity selector">
+            <button class="activity-results__back" id="activityResultsBack" title="Back to activities">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="15 18 9 12 15 6"></polyline>
               </svg>
               <span>Back</span>
             </button>
-            <div class="activity-results__selected">
-              <div class="activity-results__selected-color" id="selectedActivityColor"></div>
-              <h3 class="activity-results__selected-name" id="selectedActivityName">Activity Name</h3>
+            <div class="activity-results__title">
+              <div class="activity-results__color" id="selectedActivityColor"></div>
+              <span class="activity-results__name" id="selectedActivityName">Water Polo</span>
             </div>
           </div>
-          <div class="activity-results__list" id="activityResultsList">
-            <!-- Results will be rendered here -->
+          
+          <!-- Next Up Section -->
+          <div class="next-up" id="nextUpSection">
+            <div class="next-up__label">NEXT UP</div>
+            <div class="next-up__content" id="nextUpContent">
+              <!-- Rendered by JS -->
+            </div>
           </div>
+          
+          <!-- Week Grid -->
+          <div class="week-grid" id="weekGrid">
+            <div class="week-grid__header" id="weekGridHeader">
+              <!-- Week range title -->
+            </div>
+            <div class="week-grid__body" id="weekGridBody">
+              <!-- Days and sessions rendered by JS -->
+            </div>
+          </div>
+          
+          <!-- Show More -->
+          <button class="show-more-days" id="showMoreDays">
+            <span>Show More Days</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
         </div>
+        
       </div>
     </div>
   </main>

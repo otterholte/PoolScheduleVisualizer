@@ -51,17 +51,30 @@ class PoolScheduleApp {
       quickFilterShowAll: document.getElementById('quickFilterShowAll'),
       // List view elements
       listView: document.getElementById('listView'),
-      activitySelector: document.getElementById('activitySelector'),
-      activitySelectorGrid: document.getElementById('activitySelectorGrid'),
+      activityFinder: document.getElementById('activityFinder'),
+      categoryPills: document.getElementById('categoryPills'),
+      activityDropdown: document.getElementById('activityDropdown'),
+      activityDropdownList: document.getElementById('activityDropdownList'),
       activityResults: document.getElementById('activityResults'),
       activityResultsBack: document.getElementById('activityResultsBack'),
-      activityResultsList: document.getElementById('activityResultsList'),
       selectedActivityColor: document.getElementById('selectedActivityColor'),
-      selectedActivityName: document.getElementById('selectedActivityName')
+      selectedActivityName: document.getElementById('selectedActivityName'),
+      nextUpSection: document.getElementById('nextUpSection'),
+      nextUpContent: document.getElementById('nextUpContent'),
+      weekGrid: document.getElementById('weekGrid'),
+      weekGridHeader: document.getElementById('weekGridHeader'),
+      weekGridBody: document.getElementById('weekGridBody'),
+      showMoreDays: document.getElementById('showMoreDays')
     };
     
     // Currently selected activity for list view
     this.selectedListActivity = null;
+    
+    // Active category for pill dropdown
+    this.activeCategory = null;
+    
+    // Number of days to show in week grid (can expand)
+    this.daysToShow = 7;
     
     // Calendar picker state
     this.pickerMonth = new Date();
@@ -615,9 +628,9 @@ class PoolScheduleApp {
     } else if (view === 'list') {
       if (mapView) mapView.style.display = 'none';
       if (listView) listView.style.display = 'flex';
-      // Render activity selector if not already done
-      this.renderActivitySelector();
-      // Show selector, hide results
+      // Render category pills if not already done
+      this.renderCategoryPills();
+      // Show finder, hide results
       this.showActivitySelector();
     }
     
@@ -626,101 +639,102 @@ class PoolScheduleApp {
   }
   
   /**
-   * Render the activity selector grid with cards
+   * Render the category pills for the activity finder
    */
-  renderActivitySelector() {
-    const container = this.elements.activitySelectorGrid;
+  renderCategoryPills() {
+    const container = this.elements.categoryPills;
     if (!container) return;
     
-    // Don't re-render if already populated (check for actual element children, not comments)
-    const hasCards = Array.from(container.children).some(child => child.nodeType === Node.ELEMENT_NODE);
-    if (hasCards) return;
+    // Don't re-render if already populated
+    if (container.children.length > 0) return;
     
-    const activities = this.schedule.getActivities();
     const categories = this.schedule.getActivityCategories();
+    const activities = this.schedule.getActivities();
     
-    // Group activities by category
-    const byCategory = {};
+    // Only show categories that have activities (excluding 'closed')
     categories.forEach(cat => {
-      byCategory[cat.id] = {
-        name: cat.name,
-        activities: activities
-          .filter(a => a.category === cat.id && a.id !== 'closed')
-          .sort((a, b) => a.name.localeCompare(b.name))
-      };
+      const catActivities = activities.filter(a => a.category === cat.id && a.id !== 'closed');
+      if (catActivities.length === 0) return;
+      
+      const pill = document.createElement('button');
+      pill.className = 'category-pill';
+      pill.type = 'button';
+      pill.dataset.categoryId = cat.id;
+      pill.textContent = cat.name;
+      
+      // Mouse enter - show dropdown
+      pill.addEventListener('mouseenter', () => this.showCategoryDropdown(cat.id));
+      pill.addEventListener('click', () => this.showCategoryDropdown(cat.id));
+      
+      container.appendChild(pill);
     });
     
-    // Render each category with its activities
-    categories.forEach(cat => {
-      const group = byCategory[cat.id];
-      if (!group || group.activities.length === 0) return;
-      
-      // Category header
-      const categoryHeader = document.createElement('div');
-      categoryHeader.className = 'activity-selector__category';
-      categoryHeader.innerHTML = `<span class="activity-selector__category-name">${group.name}</span>`;
-      container.appendChild(categoryHeader);
-      
-      // Activity cards
-      group.activities.forEach(activity => {
-        const card = this.createActivityCard(activity, group.name);
-        container.appendChild(card);
+    // Handle mouse leave from the entire pills area
+    const pillsArea = document.querySelector('.activity-finder');
+    if (pillsArea) {
+      pillsArea.addEventListener('mouseleave', () => this.hideCategoryDropdown());
+    }
+    
+    // Keep dropdown open when hovering over it
+    if (this.elements.activityDropdown) {
+      this.elements.activityDropdown.addEventListener('mouseenter', () => {
+        // Don't hide if hovering over dropdown
       });
+    }
+  }
+  
+  /**
+   * Show the dropdown for a category with its activities
+   */
+  showCategoryDropdown(categoryId) {
+    const dropdown = this.elements.activityDropdown;
+    const dropdownList = this.elements.activityDropdownList;
+    if (!dropdown || !dropdownList) return;
+    
+    this.activeCategory = categoryId;
+    
+    // Update active pill state
+    document.querySelectorAll('.category-pill').forEach(pill => {
+      pill.classList.toggle('category-pill--active', pill.dataset.categoryId === categoryId);
     });
+    
+    // Get activities for this category
+    const activities = this.schedule.getActivities()
+      .filter(a => a.category === categoryId && a.id !== 'closed')
+      .sort((a, b) => a.name.localeCompare(b.name));
+    
+    // Render activity badges
+    dropdownList.innerHTML = '';
+    activities.forEach(activity => {
+      const badge = document.createElement('button');
+      badge.className = 'activity-badge';
+      badge.type = 'button';
+      badge.innerHTML = `
+        <span class="activity-badge__dot" style="background: ${activity.color}"></span>
+        ${activity.name}
+      `;
+      badge.addEventListener('click', () => this.selectListActivity(activity.id));
+      dropdownList.appendChild(badge);
+    });
+    
+    // Show dropdown
+    dropdown.classList.add('activity-dropdown--visible');
   }
   
   /**
-   * Create an activity card element
+   * Hide the category dropdown
    */
-  createActivityCard(activity, categoryName) {
-    const card = document.createElement('button');
-    card.className = 'activity-card';
-    card.type = 'button';
-    card.dataset.activityId = activity.id;
-    card.style.setProperty('--card-accent-color', activity.color);
-    card.title = `View ${activity.name} schedule`;
+  hideCategoryDropdown() {
+    const dropdown = this.elements.activityDropdown;
+    if (!dropdown) return;
     
-    // Get icon based on activity type
-    const iconSvg = this.getActivityIcon(activity.id);
+    this.activeCategory = null;
+    dropdown.classList.remove('activity-dropdown--visible');
     
-    card.innerHTML = `
-      <div class="activity-card__icon" style="background: ${activity.color}">
-        ${iconSvg}
-      </div>
-      <span class="activity-card__name">${activity.name}</span>
-      <span class="activity-card__category">${categoryName}</span>
-    `;
-    
-    card.addEventListener('click', () => this.selectListActivity(activity.id));
-    
-    return card;
-  }
-  
-  /**
-   * Get an SVG icon for an activity type
-   */
-  getActivityIcon(activityId) {
-    const icons = {
-      open_lap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h2a2 2 0 0 1 2 2v1a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-1a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1a2 2 0 0 0 2 2h1"></path></svg>',
-      masters: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"></circle><path d="M3 21v-2a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v2"></path></svg>',
-      swim_team: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>',
-      diving: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L12 8"></path><path d="M8 4h8"></path><circle cx="12" cy="14" r="3"></circle><path d="M9 17l-2 5"></path><path d="M15 17l2 5"></path></svg>',
-      high_school: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"></path></svg>',
-      synchro: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>',
-      university: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"></path></svg>',
-      water_polo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>',
-      aqua_fitness: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>',
-      learn_to_swim: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>',
-      youth_swim: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="4" r="2"></circle><path d="M15 22v-6H9v6"></path><path d="M12 6v4"></path><circle cx="8" cy="14" r="2"></circle><circle cx="16" cy="14" r="2"></circle></svg>',
-      dive_rescue: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>',
-      kayak: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 16s2-2 4-2 4 2 6 2 4-2 6-2 4 2 4 2"></path><path d="M5.5 12.5L18.5 12.5"></path><ellipse cx="12" cy="10" rx="3" ry="2"></ellipse></svg>',
-      scuba: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="6"></circle><path d="M12 16v6"></path><path d="M8 22h8"></path><path d="M18 10a6 6 0 0 0-12 0"></path></svg>',
-      adaptive: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"></circle><path d="M12 8v4"></path><circle cx="12" cy="18" r="4"></circle><path d="M12 14v0"></path></svg>',
-      therapy_session: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>',
-      private_rental: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>'
-    };
-    
-    return icons[activityId] || '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg>';
+    // Remove active state from all pills
+    document.querySelectorAll('.category-pill').forEach(pill => {
+      pill.classList.remove('category-pill--active');
+    });
   }
   
   /**
@@ -731,50 +745,76 @@ class PoolScheduleApp {
     if (!activity) return;
     
     this.selectedListActivity = activity;
+    this.daysToShow = 7; // Reset days to show
     
     // Update header
-    this.elements.selectedActivityName.textContent = activity.name;
-    this.elements.selectedActivityColor.style.background = activity.color;
+    if (this.elements.selectedActivityName) {
+      this.elements.selectedActivityName.textContent = activity.name;
+    }
+    if (this.elements.selectedActivityColor) {
+      this.elements.selectedActivityColor.style.background = activity.color;
+    }
     
-    // Show results, hide selector
-    this.elements.activitySelector.style.display = 'none';
-    this.elements.activityResults.style.display = 'flex';
+    // Show results, hide finder
+    if (this.elements.activityFinder) {
+      this.elements.activityFinder.style.display = 'none';
+    }
+    if (this.elements.activityResults) {
+      this.elements.activityResults.style.display = 'flex';
+    }
     
-    // Render upcoming times
-    this.renderUpcomingTimes(activityId);
+    // Hide category dropdown
+    this.hideCategoryDropdown();
+    
+    // Render the Concept C results view
+    this.renderActivityResults(activityId);
   }
   
   /**
-   * Show activity selector, hide results
+   * Show activity finder, hide results
    */
   showActivitySelector() {
     this.selectedListActivity = null;
-    this.elements.activitySelector.style.display = 'flex';
+    this.elements.activityFinder.style.display = 'flex';
     this.elements.activityResults.style.display = 'none';
   }
   
   /**
-   * Render upcoming times for a selected activity
+   * Render the Concept C results view with Next Up section and Week Grid
    */
-  renderUpcomingTimes(activityId) {
-    const container = this.elements.activityResultsList;
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
+  renderActivityResults(activityId) {
     const today = new Date();
-    const todayStr = this.formatDate(today);
     const currentTimeMinutes = this.getCurrentTimeMinutes();
     
-    // Collect all slots for the next 10 days
+    // Collect all upcoming slots
+    const allSlots = this.collectUpcomingSlots(activityId, 14); // Get 14 days worth
+    
+    // Find the next session (current or upcoming)
+    const nextSession = allSlots.find(s => s.isCurrent || s.isUpcoming);
+    
+    // Render Next Up section
+    this.renderNextUpSection(nextSession, currentTimeMinutes);
+    
+    // Render Week Grid
+    this.renderWeekGrid(allSlots);
+    
+    // Setup show more button
+    this.setupShowMoreButton(allSlots);
+  }
+  
+  /**
+   * Collect upcoming slots for an activity over multiple days
+   */
+  collectUpcomingSlots(activityId, numDays) {
+    const today = new Date();
+    const currentTimeMinutes = this.getCurrentTimeMinutes();
     const upcomingSlots = [];
     
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < numDays; i++) {
       const date = new Date(today);
       date.setDate(date.getDate() + i);
       const dateStr = this.formatDate(date);
       
-      // Get all slots for this activity on this date
       const slots = this.schedule.findActivitySlots(dateStr, activityId);
       
       slots.forEach(slot => {
@@ -784,13 +824,9 @@ class PoolScheduleApp {
         // Skip past events on today
         if (i === 0 && endMinutes <= currentTimeMinutes) return;
         
-        // Check if this is currently happening
         const isCurrent = i === 0 && currentTimeMinutes >= startMinutes && currentTimeMinutes < endMinutes;
+        const isUpcoming = i === 0 && startMinutes > currentTimeMinutes;
         
-        // Check if this is upcoming today (not current, not past)
-        const isUpcomingToday = i === 0 && startMinutes > currentTimeMinutes;
-        
-        // Get section info
         const section = this.schedule.getSection(slot.section);
         
         upcomingSlots.push({
@@ -802,117 +838,69 @@ class PoolScheduleApp {
           startMinutes,
           endMinutes,
           isCurrent,
-          isUpcomingToday,
-          isPast: false
+          isUpcoming: isUpcoming && !isCurrent
         });
       });
     }
     
-    // Group by date
-    const byDate = {};
-    upcomingSlots.forEach(item => {
-      if (!byDate[item.date]) {
-        byDate[item.date] = {
-          dateObj: item.dateObj,
-          dayIndex: item.dayIndex,
-          slots: []
-        };
+    // Sort by date then time
+    upcomingSlots.sort((a, b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      return a.startMinutes - b.startMinutes;
+    });
+    
+    // Mark only the first upcoming (non-current) as "next"
+    let foundNext = false;
+    upcomingSlots.forEach(slot => {
+      if ((slot.isCurrent || slot.isUpcoming) && !foundNext) {
+        slot.isNext = !slot.isCurrent;
+        foundNext = true;
       }
-      byDate[item.date].slots.push(item);
     });
     
-    // Sort slots within each day and mark only first upcoming as "next"
-    Object.values(byDate).forEach(day => {
-      day.slots.sort((a, b) => a.startMinutes - b.startMinutes);
-      
-      // Only mark the first non-current upcoming slot of today as "next"
-      let foundFirst = false;
-      day.slots.forEach(slot => {
-        if (slot.isUpcomingToday && !foundFirst) {
-          foundFirst = true;
-        } else {
-          slot.isUpcomingToday = false;
-        }
-      });
-    });
+    return upcomingSlots;
+  }
+  
+  /**
+   * Render the "Next Up" section
+   */
+  renderNextUpSection(nextSession, currentTimeMinutes) {
+    const section = this.elements.nextUpSection;
+    const content = this.elements.nextUpContent;
+    if (!section || !content) return;
     
-    // Check if empty
-    if (Object.keys(byDate).length === 0) {
-      container.innerHTML = `
-        <div class="activity-results__empty">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <circle cx="12" cy="12" r="10"></circle>
-            <path d="M12 6v6l4 2"></path>
-          </svg>
-          <h3>No Upcoming Sessions</h3>
-          <p>This activity isn't scheduled in the next 10 days.</p>
-        </div>
+    // Reset classes
+    section.className = 'next-up';
+    
+    if (!nextSession) {
+      section.classList.add('next-up--empty');
+      content.innerHTML = `
+        <span class="next-up__empty-message">No upcoming sessions scheduled</span>
       `;
       return;
     }
     
-    // Render each day group
-    Object.entries(byDate)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .forEach(([dateStr, dayData]) => {
-        const dayGroup = document.createElement('div');
-        dayGroup.className = 'results-day-group';
-        
-        // Day header
-        const dayName = dayData.dateObj.toLocaleDateString('en-US', { weekday: 'long' });
-        const dateDisplay = dayData.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        
-        let badgeHtml = '';
-        if (dayData.dayIndex === 0) {
-          badgeHtml = '<span class="results-day-group__badge">Today</span>';
-        } else if (dayData.dayIndex === 1) {
-          badgeHtml = '<span class="results-day-group__badge" style="background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3); color: var(--accent-blue);">Tomorrow</span>';
-        }
-        
-        dayGroup.innerHTML = `
-          <div class="results-day-group__header">
-            <span class="results-day-group__day">${dayName}</span>
-            <span class="results-day-group__date">${dateDisplay}</span>
-            ${badgeHtml}
-          </div>
-        `;
-        
-        // Render slots
-        dayData.slots.forEach(item => {
-          const slotEl = this.createResultsItem(item);
-          dayGroup.appendChild(slotEl);
-        });
-        
-        container.appendChild(dayGroup);
-      });
-  }
-  
-  /**
-   * Create a results item element
-   */
-  createResultsItem(item) {
-    const el = document.createElement('div');
-    el.className = 'results-item';
+    // Format time prefix
+    let timePrefix = '';
+    if (nextSession.isCurrent) {
+      section.classList.add('next-up--happening');
+      timePrefix = 'NOW';
+    } else if (nextSession.dayIndex === 0) {
+      timePrefix = 'TODAY @';
+    } else if (nextSession.dayIndex === 1) {
+      timePrefix = 'TOMORROW @';
+    } else {
+      const dayName = nextSession.dateObj.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+      timePrefix = `${dayName} @`;
+    }
     
-    if (item.isCurrent) el.classList.add('results-item--current');
-    if (item.isPast) el.classList.add('results-item--past');
-    
-    // Calculate duration
-    const durationMinutes = item.endMinutes - item.startMinutes;
-    const hours = Math.floor(durationMinutes / 60);
-    const minutes = durationMinutes % 60;
-    let durationStr = '';
-    if (hours > 0) durationStr += `${hours}h `;
-    if (minutes > 0) durationStr += `${minutes}m`;
-    durationStr = durationStr.trim() || '0m';
-    
-    // Format lanes
-    const lanes = item.slot.lanes;
+    // Format location
+    const sectionName = nextSession.section?.name || nextSession.slot.section;
+    const lanes = nextSession.slot.lanes;
     let lanesStr = '';
     if (lanes.length === 1) {
       lanesStr = `Lane ${lanes[0]}`;
     } else if (lanes.every(l => typeof l === 'number')) {
-      // Numeric lanes - show range if consecutive
       const sorted = [...lanes].sort((a, b) => a - b);
       if (sorted.length > 2 && sorted[sorted.length - 1] - sorted[0] === sorted.length - 1) {
         lanesStr = `Lanes ${sorted[0]}-${sorted[sorted.length - 1]}`;
@@ -920,31 +908,174 @@ class PoolScheduleApp {
         lanesStr = `Lanes ${sorted.join(', ')}`;
       }
     } else {
-      lanesStr = `Lanes ${lanes.join(', ')}`;
+      lanesStr = lanes.join(', ');
     }
     
-    // Badge
-    let badgeHtml = '';
-    if (item.isCurrent) {
-      badgeHtml = '<span class="results-item__badge results-item__badge--now">Now</span>';
-    } else if (item.isUpcomingToday) {
-      badgeHtml = '<span class="results-item__badge results-item__badge--upcoming">Next</span>';
+    // Calculate countdown
+    let countdownHtml = '';
+    if (nextSession.isCurrent) {
+      const endsIn = nextSession.endMinutes - currentTimeMinutes;
+      countdownHtml = `
+        <div class="next-up__countdown">
+          <div class="next-up__countdown-label">Ends in</div>
+          <div class="next-up__countdown-value">${this.formatDuration(endsIn)}</div>
+        </div>
+      `;
+    } else if (nextSession.dayIndex === 0) {
+      const startsIn = nextSession.startMinutes - currentTimeMinutes;
+      countdownHtml = `
+        <div class="next-up__countdown">
+          <div class="next-up__countdown-label">Starts in</div>
+          <div class="next-up__countdown-value">${this.formatDuration(startsIn)}</div>
+        </div>
+      `;
     }
     
-    el.innerHTML = `
-      <div class="results-item__time">
-        <span class="results-item__time-range">${this.formatTimeAMPM(item.slot.start)} - ${this.formatTimeAMPM(item.slot.end)}</span>
-        <span class="results-item__duration">${durationStr}</span>
+    const timeStr = `${this.formatTimeAMPM(nextSession.slot.start)} - ${this.formatTimeAMPM(nextSession.slot.end)}`;
+    
+    content.innerHTML = `
+      <div class="next-up__main">
+        <div class="next-up__time">
+          <span class="next-up__time-prefix">${timePrefix}</span>
+          ${timeStr}
+        </div>
+        <div class="next-up__location">${sectionName}, ${lanesStr}</div>
       </div>
-      <div class="results-item__divider"></div>
-      <div class="results-item__location">
-        <span class="results-item__pool">${item.section?.name || item.slot.section}</span>
-        <span class="results-item__lanes">${lanesStr}</span>
-      </div>
-      ${badgeHtml}
+      ${countdownHtml}
     `;
+  }
+  
+  /**
+   * Format duration in minutes to a readable string
+   */
+  formatDuration(minutes) {
+    if (minutes < 60) {
+      return `${minutes}m`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (mins === 0) {
+      return `${hours}h`;
+    }
+    return `${hours}h ${mins}m`;
+  }
+  
+  /**
+   * Render the week grid with sessions
+   */
+  renderWeekGrid(allSlots) {
+    const header = this.elements.weekGridHeader;
+    const body = this.elements.weekGridBody;
+    if (!header || !body) return;
     
-    return el;
+    // Group slots by date
+    const byDate = {};
+    allSlots.forEach(slot => {
+      if (!byDate[slot.date]) {
+        byDate[slot.date] = {
+          dateObj: slot.dateObj,
+          dayIndex: slot.dayIndex,
+          slots: []
+        };
+      }
+      byDate[slot.date].slots.push(slot);
+    });
+    
+    // Get the dates we want to show
+    const today = new Date();
+    const datesToShow = [];
+    for (let i = 0; i < this.daysToShow; i++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() + i);
+      datesToShow.push(this.formatDate(date));
+    }
+    
+    // Render header
+    const startDate = new Date(today);
+    const endDate = new Date(today);
+    endDate.setDate(endDate.getDate() + this.daysToShow - 1);
+    
+    const startStr = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const endStr = endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    
+    header.innerHTML = `<span class="week-grid__title">Schedule: ${startStr} - ${endStr}</span>`;
+    
+    // Render body
+    body.innerHTML = '';
+    
+    datesToShow.forEach((dateStr, idx) => {
+      const dayData = byDate[dateStr];
+      const dateObj = new Date(dateStr + 'T12:00:00');
+      const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+      const dateDisplay = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      
+      // Day badge
+      let badgeHtml = '';
+      if (idx === 0) {
+        badgeHtml = '<span class="week-day__badge">Today</span>';
+      } else if (idx === 1) {
+        badgeHtml = '<span class="week-day__badge" style="background: rgba(59, 130, 246, 0.15); color: var(--accent-blue);">Tomorrow</span>';
+      }
+      
+      const dayRow = document.createElement('div');
+      dayRow.className = 'week-day';
+      
+      // Sessions HTML
+      let sessionsHtml = '';
+      if (dayData && dayData.slots.length > 0) {
+        dayData.slots.forEach(slot => {
+          let chipClass = 'session-chip';
+          if (slot.isCurrent) chipClass += ' session-chip--now';
+          else if (slot.isNext) chipClass += ' session-chip--next';
+          
+          const sectionName = slot.section?.name || slot.slot.section;
+          // Shorten section name
+          const shortSection = sectionName.replace(' Pool', '').replace(' (25 YARDS)', '').replace('DEEP WELL ', 'DW ');
+          
+          sessionsHtml += `
+            <div class="${chipClass}">
+              <span class="session-chip__time">${this.formatTimeAMPM(slot.slot.start)} - ${this.formatTimeAMPM(slot.slot.end)}</span>
+              <span class="session-chip__location">${shortSection}</span>
+            </div>
+          `;
+        });
+      } else {
+        sessionsHtml = '<span class="week-day__no-sessions">No sessions</span>';
+      }
+      
+      dayRow.innerHTML = `
+        <div class="week-day__label">
+          <span class="week-day__name">${dayName}</span>
+          <span class="week-day__date">${dateDisplay}</span>
+          ${badgeHtml}
+        </div>
+        <div class="week-day__sessions">${sessionsHtml}</div>
+      `;
+      
+      body.appendChild(dayRow);
+    });
+  }
+  
+  /**
+   * Setup the "Show More Days" button
+   */
+  setupShowMoreButton(allSlots) {
+    const btn = this.elements.showMoreDays;
+    if (!btn) return;
+    
+    // Check if there are more slots beyond daysToShow
+    const hasMore = allSlots.some(s => s.dayIndex >= this.daysToShow);
+    
+    if (hasMore) {
+      btn.classList.remove('show-more-days--hidden');
+      btn.onclick = () => {
+        this.daysToShow += 7;
+        this.renderWeekGrid(allSlots);
+        this.setupShowMoreButton(allSlots);
+      };
+    } else {
+      btn.classList.add('show-more-days--hidden');
+    }
   }
   
   // Navigate day by offset (-1 for prev, +1 for next)
