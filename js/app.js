@@ -103,7 +103,7 @@ class PoolScheduleApp {
       this.setupClock();
       this.renderLegend();
       this.setupEventListeners();
-      this.updateSliderRange();
+      this.updateSliderRange(true); // forceReset on init
       this.updateTimeSlider();
       
       // Load state from URL parameters (overrides defaults)
@@ -528,20 +528,10 @@ class PoolScheduleApp {
       this.updateDisplay();
     });
     
-    // Now button
+    // Now button - returns to current time position
     this.elements.btnNow.addEventListener('click', () => {
       this.selectedDate = this.formatDate(new Date());
-      this.updateSliderRange();
-      
-      // Clamp current time to pool hours
-      const hours = this.schedule.getPoolHours(this.selectedDate);
-      let currentTime = this.getCurrentTimeMinutes();
-      if (hours) {
-        if (currentTime < hours.open) currentTime = hours.open;
-        if (currentTime > hours.close) currentTime = hours.close;
-      }
-      this.selectedTimeMinutes = currentTime;
-      
+      this.updateSliderRange(true); // forceReset to current time position
       this.updateTimeSlider();
       this.updateDisplay();
     });
@@ -1752,11 +1742,11 @@ class PoolScheduleApp {
 
   selectDate(dateStr) {
     this.selectedDate = dateStr;
-    this.updateSliderRange();
+    this.updateSliderRange(true); // forceReset when changing dates
     this.updateDisplay();
   }
 
-  updateSliderRange() {
+  updateSliderRange(forceReset = false) {
     const hours = this.schedule.getPoolHours(this.selectedDate);
     if (!hours) return;
     
@@ -1768,25 +1758,28 @@ class PoolScheduleApp {
     const isViewingToday = this.selectedDate === today;
     const currentRealTimeMinutes = this.getCurrentTimeMinutes();
     
-    // Position slider based on current time when viewing today
-    if (isViewingToday) {
-      if (currentRealTimeMinutes >= hours.close) {
-        // After closing (until midnight) - slider at right (close time)
-        this.selectedTimeMinutes = hours.close;
-      } else if (currentRealTimeMinutes < hours.open) {
-        // Before opening (after midnight) - slider at left (open time)
-        this.selectedTimeMinutes = hours.open;
-      } else {
-        // During operating hours - slider follows current time
-        this.selectedTimeMinutes = currentRealTimeMinutes;
+    // Only auto-position on initial load or when explicitly requested (forceReset)
+    // This allows manual scrubbing without being overridden
+    if (forceReset) {
+      if (isViewingToday) {
+        if (currentRealTimeMinutes >= hours.close) {
+          // After closing (until midnight) - slider at right (close time)
+          this.selectedTimeMinutes = hours.close;
+        } else if (currentRealTimeMinutes < hours.open) {
+          // Before opening (after midnight) - slider at left (open time)
+          this.selectedTimeMinutes = hours.open;
+        } else {
+          // During operating hours - slider follows current time
+          this.selectedTimeMinutes = currentRealTimeMinutes;
+        }
       }
-    } else {
-      // Not viewing today - clamp to valid range
-      if (this.selectedTimeMinutes < hours.open) {
-        this.selectedTimeMinutes = hours.open;
-      } else if (this.selectedTimeMinutes > hours.close) {
-        this.selectedTimeMinutes = hours.close;
-      }
+    }
+    
+    // Always clamp to valid range (but don't change position otherwise)
+    if (this.selectedTimeMinutes < hours.open) {
+      this.selectedTimeMinutes = hours.open;
+    } else if (this.selectedTimeMinutes > hours.close) {
+      this.selectedTimeMinutes = hours.close;
     }
     
     slider.value = this.selectedTimeMinutes;
