@@ -62,7 +62,11 @@ class AdminPanel {
       gridPrevMonth: document.getElementById('adminGridPrevMonth'),
       gridNextMonth: document.getElementById('adminGridNextMonth'),
       laneTooltip: document.getElementById('adminLaneTooltip'),
-      laneTooltipContent: document.getElementById('adminLaneTooltipContent')
+      laneTooltipContent: document.getElementById('adminLaneTooltipContent'),
+      // Help modal elements
+      helpBtn: document.getElementById('helpBtn'),
+      helpModal: document.getElementById('helpModal'),
+      helpModalClose: document.getElementById('helpModalClose')
     };
     
     // Current view: 'list' or 'grid' (grid is default)
@@ -117,14 +121,15 @@ class AdminPanel {
       this.elements.previewDate.value = today;
       this.updatePreview();
       
-      // Setup view toggle and render grid legend
+      // Setup grid-related event listeners and render legend
       this.setupViewToggle();
       this.renderGridLegend();
       
-      // Apply view from URL (or default to grid)
-      const initialView = this.getViewFromURL();
-      this.currentView = initialView === 'grid' ? 'list' : 'grid'; // Set opposite so switchView actually switches
-      this.switchView(initialView, false); // Don't update URL on initial load
+      // Always show grid view (list view toggle removed)
+      this.currentView = 'grid';
+      if (this.elements.listView) this.elements.listView.style.display = 'none';
+      if (this.elements.gridView) this.elements.gridView.style.display = 'block';
+      this.renderGridView();
       
     } catch (error) {
       console.error('Failed to initialize admin panel:', error);
@@ -318,6 +323,53 @@ class AdminPanel {
         this.renderGridView();
       }
     });
+    
+    // Help modal
+    if (this.elements.helpBtn) {
+      this.elements.helpBtn.addEventListener('click', () => {
+        this.openHelpModal();
+      });
+    }
+    
+    if (this.elements.helpModalClose) {
+      this.elements.helpModalClose.addEventListener('click', () => {
+        this.closeHelpModal();
+      });
+    }
+    
+    if (this.elements.helpModal) {
+      // Close on backdrop click
+      this.elements.helpModal.querySelector('.help-modal__backdrop')?.addEventListener('click', () => {
+        this.closeHelpModal();
+      });
+      
+      // Close on Escape key
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && this.elements.helpModal.classList.contains('help-modal--visible')) {
+          this.closeHelpModal();
+        }
+      });
+    }
+  }
+  
+  /**
+   * Open help modal
+   */
+  openHelpModal() {
+    if (this.elements.helpModal) {
+      this.elements.helpModal.classList.add('help-modal--visible');
+      document.body.style.overflow = 'hidden';
+    }
+  }
+  
+  /**
+   * Close help modal
+   */
+  closeHelpModal() {
+    if (this.elements.helpModal) {
+      this.elements.helpModal.classList.remove('help-modal--visible');
+      document.body.style.overflow = '';
+    }
   }
 
   /**

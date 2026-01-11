@@ -887,15 +887,13 @@
           5,
           6
         ],
-        "start": "08:00",
+        "start": "11:00",
         "end": "17:00",
         "activity": "open_lap"
       },
       {
         "section": "main",
         "lanes": [
-          1,
-          2,
           3,
           4,
           5,
@@ -906,6 +904,24 @@
           10
         ],
         "start": "08:00",
+        "end": "12:00",
+        "activity": "open_lap"
+      },
+      {
+        "section": "main",
+        "lanes": [
+          2
+        ],
+        "start": "11:00",
+        "end": "12:00",
+        "activity": "open_lap"
+      },
+      {
+        "section": "main",
+        "lanes": [
+          1
+        ],
+        "start": "11:00",
         "end": "12:00",
         "activity": "open_lap"
       },
@@ -934,7 +950,7 @@
           2,
           3
         ],
-        "start": "08:00",
+        "start": "13:00",
         "end": "17:00",
         "activity": "open_lap"
       },
@@ -966,37 +982,19 @@
           5,
           6
         ],
-        "start": "08:00",
+        "start": "10:30",
         "end": "11:00",
-        "activity": "youth_swim"
+        "activity": "open_lap"
       },
       {
-        "section": "shallow",
+        "section": "main",
         "lanes": [
           1,
-          2,
-          3,
-          4,
-          5,
-          6
+          2
         ],
         "start": "08:00",
         "end": "11:00",
-        "activity": "kayak"
-      },
-      {
-        "section": "shallow",
-        "lanes": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ],
-        "start": "08:00",
-        "end": "11:00",
-        "activity": "water_polo"
+        "activity": "open_lap"
       },
       {
         "section": "shallow",
@@ -1013,60 +1011,15 @@
         "activity": "water_polo"
       },
       {
-        "section": "shallow",
+        "section": "deep",
         "lanes": [
           1,
           2,
-          3,
-          4,
-          5,
-          6
+          3
         ],
         "start": "08:00",
-        "end": "09:30",
-        "activity": "water_polo"
-      },
-      {
-        "section": "shallow",
-        "lanes": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ],
-        "start": "08:00",
-        "end": "10:00",
-        "activity": "water_polo"
-      },
-      {
-        "section": "shallow",
-        "lanes": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ],
-        "start": "08:00",
-        "end": "10:00",
-        "activity": "water_polo"
-      },
-      {
-        "section": "shallow",
-        "lanes": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ],
-        "start": "08:00",
-        "end": "09:30",
-        "activity": "water_polo"
+        "end": "13:00",
+        "activity": "diving"
       }
     ],
     "2026-01-12": [

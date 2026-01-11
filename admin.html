@@ -45,27 +45,17 @@
         <!-- Hidden date input for state management -->
         <input type="hidden" id="previewDate">
         
-        <!-- View Toggle -->
-        <div class="view-toggle" id="adminViewToggle">
-          <button class="view-toggle__btn view-toggle__btn--active" data-view="grid" title="Grid View">
+        <!-- Quick Instructions -->
+        <div class="admin-instructions">
+          <span class="admin-instructions__text">
+            <strong>Drag to select</strong> cells, then choose an activity
+          </span>
+          <button class="admin-instructions__help-btn" id="helpBtn" title="How to use">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="7" height="7"></rect>
-              <rect x="14" y="3" width="7" height="7"></rect>
-              <rect x="14" y="14" width="7" height="7"></rect>
-              <rect x="3" y="14" width="7" height="7"></rect>
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
             </svg>
-            <span>Grid</span>
-          </button>
-          <button class="view-toggle__btn" data-view="list" title="List View">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="8" y1="6" x2="21" y2="6"></line>
-              <line x1="8" y1="12" x2="21" y2="12"></line>
-              <line x1="8" y1="18" x2="21" y2="18"></line>
-              <line x1="3" y1="6" x2="3.01" y2="6"></line>
-              <line x1="3" y1="12" x2="3.01" y2="12"></line>
-              <line x1="3" y1="18" x2="3.01" y2="18"></line>
-            </svg>
-            <span>List</span>
           </button>
         </div>
       </div>
@@ -227,8 +217,8 @@
       <div class="lane-tooltip__content" id="adminLaneTooltipContent"></div>
     </div>
 
-    <!-- Export/Import -->
-    <div class="io-section">
+    <!-- Export/Import (hidden from managers) -->
+    <div class="io-section" style="display: none;">
       <h3 class="io-section__title">Import & Export</h3>
       <div class="io-section__buttons">
         <button class="btn btn--primary btn--sm" id="exportBtn">
@@ -258,6 +248,55 @@
       </div>
       <div class="json-preview" id="jsonPreview" style="display: none;">
         <code id="jsonCode"></code>
+      </div>
+    </div>
+    
+    <!-- Help Modal -->
+    <div class="help-modal" id="helpModal">
+      <div class="help-modal__backdrop"></div>
+      <div class="help-modal__content">
+        <div class="help-modal__header">
+          <h2 class="help-modal__title">How to Edit the Schedule</h2>
+          <button class="help-modal__close" id="helpModalClose">&times;</button>
+        </div>
+        <div class="help-modal__body">
+          <div class="help-step">
+            <div class="help-step__number">1</div>
+            <div class="help-step__content">
+              <h4>Navigate to the right day</h4>
+              <p>Use the arrows or click the date to open the calendar picker.</p>
+            </div>
+          </div>
+          <div class="help-step">
+            <div class="help-step__number">2</div>
+            <div class="help-step__content">
+              <h4>Select cells by dragging</h4>
+              <p>Click and drag across the grid to select the time slots and lanes you want to change.</p>
+            </div>
+          </div>
+          <div class="help-step">
+            <div class="help-step__number">3</div>
+            <div class="help-step__content">
+              <h4>Choose an activity</h4>
+              <p>A panel will appear where you can select the activity to apply to your selection.</p>
+            </div>
+          </div>
+          <div class="help-step">
+            <div class="help-step__number">4</div>
+            <div class="help-step__content">
+              <h4>Changes save automatically</h4>
+              <p>Your changes are saved immediately—no need to click a save button.</p>
+            </div>
+          </div>
+          <div class="help-tips">
+            <h4>💡 Tips</h4>
+            <ul>
+              <li><strong>Quick Add:</strong> Select a single activity in the legend, then drag to apply it instantly without the selection panel.</li>
+              <li><strong>Filter View:</strong> Click activities in the legend to highlight only those on the grid.</li>
+              <li><strong>Add Entry:</strong> Use the "Add Entry" button for precise control over times and lanes.</li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
   </main>
