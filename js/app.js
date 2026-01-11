@@ -260,14 +260,33 @@ class PoolScheduleApp {
   }
 
   setupClock() {
-    // Track last known minute to detect changes
+    // Update the clock display every second to show live time
+    const updateClock = () => {
+      const now = new Date();
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+      const period = hours >= 12 ? 'PM' : 'AM';
+      const displayHour = hours % 12 || 12;
+      const displayMinutes = minutes.toString().padStart(2, '0');
+      const timeStr = `${displayHour}:${displayMinutes} ${period}`;
+      
+      // Always update the clock display with current real time
+      if (this.elements.timeDisplay) {
+        this.elements.timeDisplay.textContent = timeStr;
+      }
+    };
+    
+    // Update clock immediately and then every second
+    updateClock();
+    setInterval(updateClock, 1000);
+    
+    // Track minute changes for auto-advancing scrubber
     let lastMinute = new Date().getMinutes();
     
-    const checkTimeUpdate = () => {
+    const checkMinuteChange = () => {
       const now = new Date();
       const currentMinute = now.getMinutes();
       
-      // Check if minute has changed
       if (currentMinute !== lastMinute) {
         lastMinute = currentMinute;
         
@@ -275,20 +294,23 @@ class PoolScheduleApp {
         const today = this.formatDate(now);
         const currentTimeMinutes = this.getCurrentTimeMinutes();
         const isViewingToday = this.selectedDate === today;
-        const isAtLiveTime = this.selectedTimeMinutes === this.getCurrentTimeMinutes() - 1 || 
+        const isAtLiveTime = this.selectedTimeMinutes === currentTimeMinutes - 1 || 
                             this.selectedTimeMinutes === currentTimeMinutes;
         
         if (isViewingToday && isAtLiveTime) {
-          // Update to current time and refresh display
+          // Auto-advance scrubber to current time
           this.selectedTimeMinutes = currentTimeMinutes;
           this.updateTimeSlider();
           this.updateDisplay();
         }
+        
+        // Always update display indicators (LIVE badge, closed state)
+        this.updateDisplayIndicators();
       }
     };
     
     // Check every 10 seconds for minute changes
-    setInterval(checkTimeUpdate, 10000);
+    setInterval(checkMinuteChange, 10000);
   }
 
   renderLegend() {
@@ -928,8 +950,11 @@ class PoolScheduleApp {
       const windows = this.mergeIntoAvailabilityWindows(filteredSlots);
       const uniqueId = `day-${dateStr.replace(/-/g, '')}`;
       
-      // Build HTML for each window (same logic as initial render)
-      const windowsHtml = windows.map((w, windowIdx) => {
+      // Build HTML - buttons first, then details as siblings
+      let buttonsHtml = '';
+      let detailsHtml = '';
+      
+      windows.forEach((w, windowIdx) => {
         if (w.isGrouped) {
           const windowId = `${uniqueId}-w${windowIdx}`;
           const poolTable = this.groupSlotsByPool(w.slots);
@@ -940,7 +965,7 @@ class PoolScheduleApp {
             </div>
           `).join('');
           
-          return `
+          buttonsHtml += `
             <div class="availability-window-group" id="${windowId}">
               <button class="availability-window" data-toggle="${windowId}">
                 <svg class="availability-window__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -949,30 +974,33 @@ class PoolScheduleApp {
                 <span class="availability-window__time">${this.formatTimeAMPM(w.start)} - ${this.formatTimeAMPM(w.end)}</span>
                 <span class="availability-window__count">${w.poolCount} pool${w.poolCount > 1 ? 's' : ''}</span>
               </button>
-              <div class="availability-window-detail" id="${windowId}-detail" style="display: none;">
-                <div class="pool-table">
-                  <div class="pool-table__header">
-                    <span class="pool-table__col-pool">Pool</span>
-                    <span class="pool-table__col-times">Available Hours</span>
-                  </div>
-                  ${tableHtml}
+            </div>
+          `;
+          
+          detailsHtml += `
+            <div class="availability-window-detail" id="${windowId}-detail" data-group="${windowId}" style="display: none;">
+              <div class="pool-table">
+                <div class="pool-table__header">
+                  <span class="pool-table__col-pool">Pool</span>
+                  <span class="pool-table__col-times">Available Hours</span>
                 </div>
+                ${tableHtml}
               </div>
             </div>
           `;
         } else {
           const slot = w.slots[0];
           const shortName = slot.shortName || slot.slot.section;
-          return `
+          buttonsHtml += `
             <div class="session-chip session-chip--individual">
               <span class="session-chip__time">${this.formatTimeAMPM(w.start)} - ${this.formatTimeAMPM(w.end)}</span>
               <span class="session-chip__location">${shortName}</span>
             </div>
           `;
         }
-      }).join('');
+      });
       
-      windowsContainer.innerHTML = windowsHtml;
+      windowsContainer.innerHTML = buttonsHtml + detailsHtml;
       
       // Re-attach click handlers for grouped windows (with accordion behavior)
       windowsContainer.querySelectorAll('[data-toggle]').forEach(btn => {
@@ -981,16 +1009,15 @@ class PoolScheduleApp {
           const windowGroup = document.getElementById(windowId);
           const detail = document.getElementById(`${windowId}-detail`);
           if (windowGroup && detail) {
-            const isExpanded = detail.style.display !== 'none';
+            const isExpanded = detail.style.display === 'block';
             
             // Accordion: collapse all other expanded groups first
             if (!isExpanded) {
               document.querySelectorAll('.availability-window-group--expanded').forEach(group => {
-                const otherDetail = group.querySelector('.availability-window-detail');
-                if (otherDetail) {
-                  otherDetail.style.display = 'none';
-                }
                 group.classList.remove('availability-window-group--expanded');
+              });
+              document.querySelectorAll('.availability-window-detail').forEach(d => {
+                d.style.display = 'none';
               });
             }
             
@@ -1319,10 +1346,13 @@ class PoolScheduleApp {
           const windows = this.mergeIntoAvailabilityWindows(enrichedSlots);
           const uniqueId = `day-${dateStr.replace(/-/g, '')}`;
           
-          // Build HTML for each window
-          const windowsHtml = windows.map((w, windowIdx) => {
+          // Build HTML for each window - buttons first, then details
+          let buttonsHtml = '';
+          let detailsHtml = '';
+          
+          windows.forEach((w, windowIdx) => {
             if (w.isGrouped) {
-              // Grouped window - show button with expandable table
+              // Grouped window - button and detail are siblings
               const windowId = `${uniqueId}-w${windowIdx}`;
               const poolTable = this.groupSlotsByPool(w.slots);
               const tableHtml = poolTable.map(pool => `
@@ -1332,7 +1362,7 @@ class PoolScheduleApp {
                 </div>
               `).join('');
               
-              return `
+              buttonsHtml += `
                 <div class="availability-window-group" id="${windowId}">
                   <button class="availability-window" data-toggle="${windowId}">
                     <svg class="availability-window__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1341,14 +1371,17 @@ class PoolScheduleApp {
                     <span class="availability-window__time">${this.formatTimeAMPM(w.start)} - ${this.formatTimeAMPM(w.end)}</span>
                     <span class="availability-window__count">${w.poolCount} pool${w.poolCount > 1 ? 's' : ''}</span>
                   </button>
-                  <div class="availability-window-detail" id="${windowId}-detail" style="display: none;">
-                    <div class="pool-table">
-                      <div class="pool-table__header">
-                        <span class="pool-table__col-pool">Pool</span>
-                        <span class="pool-table__col-times">Available Hours</span>
-                      </div>
-                      ${tableHtml}
+                </div>
+              `;
+              
+              detailsHtml += `
+                <div class="availability-window-detail" id="${windowId}-detail" data-group="${windowId}" style="display: none;">
+                  <div class="pool-table">
+                    <div class="pool-table__header">
+                      <span class="pool-table__col-pool">Pool</span>
+                      <span class="pool-table__col-times">Available Hours</span>
                     </div>
+                    ${tableHtml}
                   </div>
                 </div>
               `;
@@ -1356,14 +1389,16 @@ class PoolScheduleApp {
               // Individual slot - show as simple chip
               const slot = w.slots[0];
               const shortName = slot.shortName || slot.slot.section;
-              return `
+              buttonsHtml += `
                 <div class="session-chip session-chip--individual">
                   <span class="session-chip__time">${this.formatTimeAMPM(w.start)} - ${this.formatTimeAMPM(w.end)}</span>
                   <span class="session-chip__location">${shortName}</span>
                 </div>
               `;
             }
-          }).join('');
+          });
+          
+          const windowsHtml = buttonsHtml + detailsHtml;
           
           sessionsHtml = `
             <div class="sessions-collapsible" id="${uniqueId}" data-date="${dateStr}">
@@ -1552,16 +1587,15 @@ class PoolScheduleApp {
         const detail = document.getElementById(`${windowId}-detail`);
         
         if (windowGroup && detail) {
-          const isExpanded = detail.style.display !== 'none';
+          const isExpanded = detail.style.display === 'block';
           
           // Accordion: collapse all other expanded groups first
           if (!isExpanded) {
             document.querySelectorAll('.availability-window-group--expanded').forEach(group => {
-              const otherDetail = group.querySelector('.availability-window-detail');
-              if (otherDetail) {
-                otherDetail.style.display = 'none';
-              }
               group.classList.remove('availability-window-group--expanded');
+            });
+            document.querySelectorAll('.availability-window-detail').forEach(d => {
+              d.style.display = 'none';
             });
           }
           
@@ -1734,15 +1768,25 @@ class PoolScheduleApp {
     const isViewingToday = this.selectedDate === today;
     const currentRealTimeMinutes = this.getCurrentTimeMinutes();
     
-    // If viewing today and it's after closing, set slider to closing time
-    if (isViewingToday && currentRealTimeMinutes >= hours.close) {
-      this.selectedTimeMinutes = hours.close;
-    }
-    // Clamp to valid range
-    else if (this.selectedTimeMinutes < hours.open) {
-      this.selectedTimeMinutes = hours.open;
-    } else if (this.selectedTimeMinutes > hours.close) {
-      this.selectedTimeMinutes = hours.close;
+    // Position slider based on current time when viewing today
+    if (isViewingToday) {
+      if (currentRealTimeMinutes >= hours.close) {
+        // After closing (until midnight) - slider at right (close time)
+        this.selectedTimeMinutes = hours.close;
+      } else if (currentRealTimeMinutes < hours.open) {
+        // Before opening (after midnight) - slider at left (open time)
+        this.selectedTimeMinutes = hours.open;
+      } else {
+        // During operating hours - slider follows current time
+        this.selectedTimeMinutes = currentRealTimeMinutes;
+      }
+    } else {
+      // Not viewing today - clamp to valid range
+      if (this.selectedTimeMinutes < hours.open) {
+        this.selectedTimeMinutes = hours.open;
+      } else if (this.selectedTimeMinutes > hours.close) {
+        this.selectedTimeMinutes = hours.close;
+      }
     }
     
     slider.value = this.selectedTimeMinutes;
@@ -1821,14 +1865,7 @@ class PoolScheduleApp {
       this.closedOverlayDismissed = false;
     }
     
-    // Update time display - show current real time if after closing on today
-    let displayTimeMinutes = this.selectedTimeMinutes;
-    if (isViewingToday && poolHours && currentRealTimeMinutes >= poolHours.close) {
-      // After closing - show actual current time in badge
-      displayTimeMinutes = currentRealTimeMinutes;
-    }
-    const timeStr = this.schedule.minutesToTimeString(displayTimeMinutes);
-    this.elements.timeDisplay.textContent = timeStr;
+    // Note: Time display is now handled by setupClock() for live updates
     
     // Determine if we should show the LIVE badge
     const isLive = this.selectedTimeMinutes === currentRealTimeMinutes && 
@@ -1873,6 +1910,42 @@ class PoolScheduleApp {
     
     // Update pool lanes
     this.updatePoolLanes();
+  }
+  
+  /**
+   * Update display indicators (LIVE badge, closed state) without full refresh
+   */
+  updateDisplayIndicators() {
+    const today = this.formatDate(new Date());
+    const isViewingToday = this.selectedDate === today;
+    const currentRealTimeMinutes = this.getCurrentTimeMinutes();
+    const poolHours = this.schedule.getPoolHours(this.selectedDate);
+    
+    if (!poolHours) return;
+    
+    // Check if pool is CURRENTLY closed
+    const isCurrentlyClosed = isViewingToday && (
+      currentRealTimeMinutes < poolHours.open || 
+      currentRealTimeMinutes >= poolHours.close
+    );
+    
+    // Determine if we should show the LIVE badge
+    const isLive = this.selectedTimeMinutes === currentRealTimeMinutes && 
+                   isViewingToday && !isCurrentlyClosed;
+    
+    // Update live/closed indicators
+    if (isCurrentlyClosed) {
+      this.elements.liveIndicator.classList.remove('time-now-btn__live--active');
+      this.elements.closedIndicator.classList.add('time-now-btn__closed--active');
+      this.updateNextOpenTime(poolHours, currentRealTimeMinutes);
+    } else {
+      this.elements.closedIndicator.classList.remove('time-now-btn__closed--active');
+      if (isLive) {
+        this.elements.liveIndicator.classList.add('time-now-btn__live--active');
+      } else {
+        this.elements.liveIndicator.classList.remove('time-now-btn__live--active');
+      }
+    }
   }
   
   updateNextOpenTime(poolHours, currentTimeMinutes) {

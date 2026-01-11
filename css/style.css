@@ -918,36 +918,37 @@ body::before {
   position: relative;
 }
 
-/* Pool Closed Overlay */
+/* Pool Closed Overlay - Compact Card Style */
 .pool-closed-overlay {
   display: none;
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(15, 23, 42, 0.7);
-  backdrop-filter: blur(2px);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   z-index: 50;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius);
+  max-width: 280px;
+  width: 90%;
 }
 
 .pool-closed-overlay--visible {
-  display: flex;
+  display: block;
+  animation: fadeIn 0.2s ease-out;
 }
 
 .pool-closed-overlay__close {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 32px;
-  height: 32px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: var(--radius);
-  color: var(--text-secondary);
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -956,39 +957,39 @@ body::before {
 }
 
 .pool-closed-overlay__close:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
   color: var(--text-primary);
 }
 
 .pool-closed-overlay__close svg {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 .pool-closed-overlay__content {
   text-align: center;
-  padding: 40px;
+  padding: 24px 20px;
 }
 
 .pool-closed-overlay__icon {
-  width: 64px;
-  height: 64px;
+  width: 40px;
+  height: 40px;
   color: var(--text-secondary);
-  margin-bottom: 16px;
-  opacity: 0.6;
+  margin-bottom: 12px;
+  opacity: 0.7;
 }
 
 .pool-closed-overlay__title {
   font-family: var(--font-display);
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: 1.25rem;
+  font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .pool-closed-overlay__time {
-  font-size: 1rem;
-  color: var(--text-secondary);
+  font-size: 0.85rem;
+  color: var(--text-muted);
 }
 
 /* Grey out pool when closed */
@@ -2210,6 +2211,8 @@ body::before {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  align-items: flex-start;
+  position: relative;
 }
 
 .availability-window {
@@ -2241,15 +2244,24 @@ body::before {
   transform: rotate(180deg);
 }
 
-/* Availability Window Group - contains button + expandable detail */
+/* Availability Window Group - just contains the button */
 .availability-window-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: inline-flex;
 }
 
+/* Detail appears below the entire button row at full width */
 .availability-window-detail {
+  display: none;
+  width: 100%;
+  flex-basis: 100%;
+  order: 999;
   animation: fadeIn 0.2s ease-out;
+  margin-top: 8px;
+}
+
+.availability-window-group--expanded + .availability-window-detail,
+.availability-window-detail[style*="display: block"] {
+  display: block;
 }
 
 .availability-window__time {
