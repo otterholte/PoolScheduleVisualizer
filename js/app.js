@@ -687,37 +687,14 @@ class PoolScheduleApp {
     
     // Update tab states
     const tabs = document.querySelectorAll('.segment-tab');
-    let activeTab = null;
     
     tabs.forEach(tab => {
       const isActive = tab.dataset.categoryId === categoryId;
       tab.classList.toggle('segment-tab--active', isActive);
-      if (isActive) activeTab = tab;
     });
-    
-    // Move the indicator
-    this.updateSegmentIndicator(activeTab);
     
     // Render activities for this category
     this.renderSegmentContent(categoryId);
-  }
-  
-  /**
-   * Update the sliding indicator position
-   */
-  updateSegmentIndicator(activeTab) {
-    const indicator = this.elements.segmentIndicator;
-    if (!indicator || !activeTab) return;
-    
-    const track = activeTab.parentElement;
-    const trackRect = track.getBoundingClientRect();
-    const tabRect = activeTab.getBoundingClientRect();
-    
-    const left = tabRect.left - trackRect.left + 4; // +4 for track padding
-    const width = tabRect.width;
-    
-    indicator.style.left = `${left}px`;
-    indicator.style.width = `${width}px`;
   }
   
   /**
