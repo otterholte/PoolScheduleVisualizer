@@ -1016,22 +1016,74 @@ class PoolScheduleApp {
       // Sessions HTML
       let sessionsHtml = '';
       if (dayData && dayData.slots.length > 0) {
-        dayData.slots.forEach(slot => {
-          let chipClass = 'session-chip';
-          if (slot.isCurrent) chipClass += ' session-chip--now';
-          else if (slot.isNext) chipClass += ' session-chip--next';
+        const slots = dayData.slots;
+        const shouldCollapse = slots.length >= 4;
+        
+        if (shouldCollapse) {
+          // Merge overlapping times into availability windows
+          const windows = this.mergeIntoAvailabilityWindows(slots);
+          const uniqueId = `day-${dateStr.replace(/-/g, '')}`;
           
-          const sectionName = slot.section?.name || slot.slot.section;
-          // Shorten section name
-          const shortSection = sectionName.replace(' Pool', '').replace(' (25 YARDS)', '').replace('DEEP WELL ', 'DW ');
-          
-          sessionsHtml += `
-            <div class="${chipClass}">
-              <span class="session-chip__time">${this.formatTimeAMPM(slot.slot.start)} - ${this.formatTimeAMPM(slot.slot.end)}</span>
-              <span class="session-chip__location">${shortSection}</span>
+          // Collapsed view - availability windows
+          sessionsHtml = `
+            <div class="sessions-collapsed" id="${uniqueId}-collapsed">
+              <div class="availability-windows">
+                ${windows.map(w => `
+                  <button class="availability-window" data-toggle="${uniqueId}">
+                    <span class="availability-window__time">${this.formatTimeAMPM(w.start)} - ${this.formatTimeAMPM(w.end)}</span>
+                    <span class="availability-window__count">${w.poolCount} pool${w.poolCount > 1 ? 's' : ''}</span>
+                  </button>
+                `).join('')}
+              </div>
+              <button class="sessions-toggle" data-toggle="${uniqueId}">
+                <span>Show all ${slots.length} sessions</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+            </div>
+            <div class="sessions-expanded" id="${uniqueId}-expanded" style="display: none;">
+              <div class="session-chips-grid">
+                ${slots.map(slot => {
+                  let chipClass = 'session-chip';
+                  if (slot.isCurrent) chipClass += ' session-chip--now';
+                  else if (slot.isNext) chipClass += ' session-chip--next';
+                  const sectionName = slot.section?.name || slot.slot.section;
+                  const shortSection = sectionName.replace(' Pool', '').replace(' (25 YARDS)', '').replace('DEEP WELL ', 'DW ');
+                  return `
+                    <div class="${chipClass}">
+                      <span class="session-chip__time">${this.formatTimeAMPM(slot.slot.start)} - ${this.formatTimeAMPM(slot.slot.end)}</span>
+                      <span class="session-chip__location">${shortSection}</span>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+              <button class="sessions-toggle sessions-toggle--collapse" data-toggle="${uniqueId}">
+                <span>Hide details</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="18 15 12 9 6 15"></polyline>
+                </svg>
+              </button>
             </div>
           `;
-        });
+        } else {
+          // Normal view for fewer sessions
+          slots.forEach(slot => {
+            let chipClass = 'session-chip';
+            if (slot.isCurrent) chipClass += ' session-chip--now';
+            else if (slot.isNext) chipClass += ' session-chip--next';
+            
+            const sectionName = slot.section?.name || slot.slot.section;
+            const shortSection = sectionName.replace(' Pool', '').replace(' (25 YARDS)', '').replace('DEEP WELL ', 'DW ');
+            
+            sessionsHtml += `
+              <div class="${chipClass}">
+                <span class="session-chip__time">${this.formatTimeAMPM(slot.slot.start)} - ${this.formatTimeAMPM(slot.slot.end)}</span>
+                <span class="session-chip__location">${shortSection}</span>
+              </div>
+            `;
+          });
+        }
       } else {
         sessionsHtml = '<span class="week-day__no-sessions">No sessions</span>';
       }
@@ -1046,6 +1098,84 @@ class PoolScheduleApp {
       `;
       
       body.appendChild(dayRow);
+    });
+    
+    // Add click handlers for expand/collapse toggles
+    this.setupSessionToggles();
+  }
+  
+  /**
+   * Merge slots into continuous availability windows
+   */
+  mergeIntoAvailabilityWindows(slots) {
+    // Sort by start time
+    const sorted = [...slots].sort((a, b) => a.startMinutes - b.startMinutes);
+    
+    const windows = [];
+    let currentWindow = null;
+    
+    sorted.forEach(slot => {
+      if (!currentWindow) {
+        // Start new window
+        currentWindow = {
+          startMinutes: slot.startMinutes,
+          endMinutes: slot.endMinutes,
+          start: slot.slot.start,
+          end: slot.slot.end,
+          pools: new Set([slot.slot.section])
+        };
+      } else if (slot.startMinutes <= currentWindow.endMinutes) {
+        // Overlaps with current window - extend it
+        if (slot.endMinutes > currentWindow.endMinutes) {
+          currentWindow.endMinutes = slot.endMinutes;
+          currentWindow.end = slot.slot.end;
+        }
+        currentWindow.pools.add(slot.slot.section);
+      } else {
+        // Gap - save current window and start new one
+        windows.push({
+          start: currentWindow.start,
+          end: currentWindow.end,
+          poolCount: currentWindow.pools.size
+        });
+        currentWindow = {
+          startMinutes: slot.startMinutes,
+          endMinutes: slot.endMinutes,
+          start: slot.slot.start,
+          end: slot.slot.end,
+          pools: new Set([slot.slot.section])
+        };
+      }
+    });
+    
+    // Don't forget the last window
+    if (currentWindow) {
+      windows.push({
+        start: currentWindow.start,
+        end: currentWindow.end,
+        poolCount: currentWindow.pools.size
+      });
+    }
+    
+    return windows;
+  }
+  
+  /**
+   * Setup click handlers for session expand/collapse toggles
+   */
+  setupSessionToggles() {
+    document.querySelectorAll('[data-toggle]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const uniqueId = btn.dataset.toggle;
+        const collapsed = document.getElementById(`${uniqueId}-collapsed`);
+        const expanded = document.getElementById(`${uniqueId}-expanded`);
+        
+        if (collapsed && expanded) {
+          const isExpanded = expanded.style.display !== 'none';
+          collapsed.style.display = isExpanded ? 'flex' : 'none';
+          expanded.style.display = isExpanded ? 'none' : 'block';
+        }
+      });
     });
   }
   
