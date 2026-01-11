@@ -753,16 +753,24 @@ class PoolScheduleApp {
   updateNextOpenTime(poolHours, currentTimeMinutes) {
     if (!poolHours) return;
     
-    // minutesToTimeString already returns 12-hour format like "6:00 AM"
-    const formattedOpenTime = this.schedule.minutesToTimeString(poolHours.open);
-    
     // Check if we're before opening or after closing
     if (currentTimeMinutes < poolHours.open) {
-      // Before opening today
+      // Before opening today - use today's hours
+      const formattedOpenTime = this.schedule.minutesToTimeString(poolHours.open);
       this.elements.nextOpenTime.textContent = `Opens today at ${formattedOpenTime}`;
     } else {
-      // After closing - opens tomorrow
-      this.elements.nextOpenTime.textContent = `Opens tomorrow at ${formattedOpenTime}`;
+      // After closing - check TOMORROW's schedule for accurate open time
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowDate = this.formatDate(tomorrow);
+      const tomorrowHours = this.schedule.getPoolHours(tomorrowDate);
+      
+      if (tomorrowHours) {
+        const formattedOpenTime = this.schedule.minutesToTimeString(tomorrowHours.open);
+        this.elements.nextOpenTime.textContent = `Opens tomorrow at ${formattedOpenTime}`;
+      } else {
+        this.elements.nextOpenTime.textContent = `Check schedule for next open day`;
+      }
     }
   }
 
