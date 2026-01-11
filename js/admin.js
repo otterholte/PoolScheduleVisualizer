@@ -84,6 +84,10 @@ class AdminPanel {
     // Clock update interval
     this.clockInterval = null;
     
+    // Auto-save state
+    this.saveTimeout = null;
+    this.isSaving = false;
+    
     // Grid selection state
     this.isSelecting = false;
     this.selectionStart = null;
@@ -393,6 +397,7 @@ class AdminPanel {
     
     this.closeModal();
     this.updatePreview();
+    this.autoSave();
   }
 
   /**
@@ -526,6 +531,7 @@ class AdminPanel {
     
     this.showToast('Entry deleted', 'success');
     this.updatePreview();
+    this.autoSave();
   }
 
   /**
@@ -543,6 +549,7 @@ class AdminPanel {
     delete this.pendingSchedules[date];
     this.showToast('Day cleared', 'success');
     this.updatePreview();
+    this.autoSave();
   }
 
   /**
@@ -588,6 +595,7 @@ class AdminPanel {
       this.pendingSchedules = data.schedules;
       this.showToast('Schedule imported successfully!', 'success');
       this.updatePreview();
+      this.autoSave();
       
     } catch (error) {
       console.error('Import error:', error);
@@ -633,6 +641,61 @@ class AdminPanel {
     setTimeout(() => {
       toast.classList.remove('toast--visible');
     }, 3000);
+  }
+
+  /**
+   * Auto-save schedule to server (debounced)
+   */
+  autoSave() {
+    // Debounce saves - wait 1 second after last change
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+    }
+    
+    this.saveTimeout = setTimeout(() => {
+      this.saveScheduleToServer();
+    }, 1000);
+  }
+  
+  /**
+   * Save schedule data to server
+   */
+  async saveScheduleToServer() {
+    if (this.isSaving) return;
+    
+    this.isSaving = true;
+    
+    try {
+      const exportData = {
+        ...this.schedule.data,
+        schedules: this.pendingSchedules
+      };
+      
+      const response = await fetch('/api/save-schedule', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(exportData)
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        this.showToast('Auto-saved ✓', 'success');
+        // Update the schedule manager's data
+        this.schedule.data.schedules = this.pendingSchedules;
+      } else {
+        console.error('Save failed:', result.message);
+        this.showToast('Auto-save failed', 'error');
+      }
+    } catch (error) {
+      console.error('Save error:', error);
+      // Don't show error toast for network errors (server might not support auto-save)
+      console.log('Auto-save not available - use Export JSON to save changes');
+    } finally {
+      this.isSaving = false;
+    }
   }
 
   /**
@@ -1460,6 +1523,7 @@ class AdminPanel {
     this.updatePreview();
     
     this.showToast(`Applied "${activity.name}" to ${info.cellCount} cells`, 'success');
+    this.autoSave();
   }
   
   startGridCellTooltip(e, cell) {

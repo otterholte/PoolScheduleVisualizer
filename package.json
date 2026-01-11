@@ -1,0 +1,14 @@
+{
+  "name": "pool-schedule-visualizer",
+  "version": "1.0.0",
+  "description": "Visual schedule management for EPIC Aquatic Center",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "serve": "npx serve -l 3001"
+  },
+  "keywords": ["schedule", "pool", "aquatic", "visualization"],
+  "author": "",
+  "license": "MIT"
+}
+
