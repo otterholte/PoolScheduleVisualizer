@@ -17,7 +17,7 @@
   align-items: center;
   gap: 8px;
   padding: 10px 18px;
-  border-radius: var(--radius-md);
+  border-radius: 50px;
   font-size: 0.9rem;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.8);

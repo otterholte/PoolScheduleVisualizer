@@ -8,14 +8,23 @@ class ScheduleManager {
     this.data = null;
     this.activities = new Map();
     this.sections = new Map();
+    this.facilitySlug = new URLSearchParams(window.location.search).get('facility') || 'epic';
   }
 
   /**
-   * Load schedule data from JSON file
+   * Load schedule data from facility API or fallback to JSON file
    */
   async load() {
     try {
-      const response = await fetch('data/schedule.json');
+      // Try to load from facility API first
+      let response = await fetch(`/api/facility/${this.facilitySlug}`);
+      
+      // Fallback to default schedule.json if facility not found
+      if (!response.ok) {
+        console.warn(`Facility '${this.facilitySlug}' not found, falling back to default`);
+        response = await fetch('data/schedule.json');
+      }
+      
       if (!response.ok) throw new Error('Failed to load schedule');
       
       this.data = await response.json();

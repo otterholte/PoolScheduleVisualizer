@@ -5,6 +5,7 @@
 class AdminPanel {
   constructor() {
     this.schedule = scheduleManager;
+    this.facilitySlug = new URLSearchParams(window.location.search).get('facility') || 'epic';
     this.currentEditId = null;
     this.pendingSchedules = {}; // Local copy of schedules for editing
     
@@ -106,6 +107,9 @@ class AdminPanel {
   async init() {
     try {
       await this.schedule.load();
+      
+      // Update header with facility name
+      this.updateFacilityHeader();
       
       // Copy schedules for local editing
       this.pendingSchedules = JSON.parse(JSON.stringify(this.schedule.data.schedules || {}));
@@ -696,6 +700,32 @@ class AdminPanel {
   }
 
   /**
+   * Update the header with facility name and navigation links
+   */
+  updateFacilityHeader() {
+    const facilityName = this.schedule.data?.facilityInfo?.name || 'Pool Schedule';
+    
+    // Update header title
+    const titleEl = document.querySelector('.header__title');
+    if (titleEl) {
+      titleEl.textContent = facilityName;
+    }
+    
+    // Update page title
+    document.title = `Schedule Manager - ${facilityName}`;
+    
+    // Update navigation links to include facility parameter
+    const facilityParam = `?facility=${this.facilitySlug}`;
+    const navSchedule = document.getElementById('navSchedule');
+    const navPoolSettings = document.getElementById('navPoolSettings');
+    const navViewSite = document.getElementById('navViewSite');
+    
+    if (navSchedule) navSchedule.href = `admin.html${facilityParam}`;
+    if (navPoolSettings) navPoolSettings.href = `pool-settings.html${facilityParam}`;
+    if (navViewSite) navViewSite.href = `index.html${facilityParam}`;
+  }
+
+  /**
    * Auto-save schedule to server (debounced)
    */
   autoSave() {
@@ -723,7 +753,8 @@ class AdminPanel {
         schedules: this.pendingSchedules
       };
       
-      const response = await fetch('/api/save-schedule', {
+      // Save to facility-specific endpoint
+      const response = await fetch(`/api/save-facility/${this.facilitySlug}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -775,16 +806,17 @@ class AdminPanel {
   // ==========================================
   
   setupViewToggle() {
-    if (!this.elements.viewToggle) return;
-    
-    const buttons = this.elements.viewToggle.querySelectorAll('.view-toggle__btn');
-    buttons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        this.switchView(btn.dataset.view);
+    // Setup view toggle buttons if the element exists
+    if (this.elements.viewToggle) {
+      const buttons = this.elements.viewToggle.querySelectorAll('.view-toggle__btn');
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          this.switchView(btn.dataset.view);
+        });
       });
-    });
+    }
     
-    // Setup grid filter buttons
+    // Setup grid filter buttons (these should work even without view toggle)
     if (this.elements.gridQuickFilterOpenSwim) {
       this.elements.gridQuickFilterOpenSwim.addEventListener('click', () => {
         this.selectOpenSwimFilter();

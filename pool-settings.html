@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pool Settings - Layout Builder</title>
+  
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="css/pool-settings.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏊</text></svg>">
+</head>
+<body class="pool-settings-page">
+  
+  <!-- Admin Header -->
+  <header class="header admin-header">
+    <div class="header__brand">
+      <div class="header__logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4,15a1.65,1.65,0,0,0,.33,1.82l.06.06a2,2,0,0,1,0,2.83,2,2,0,0,1-2.83,0l-.06-.06a1.65,1.65,0,0,0-1.82-.33,1.65,1.65,0,0,0-1,1.51V21a2,2,0,0,1-2,2,2,2,0,0,1-2-2v-.09A1.65,1.65,0,0,0,9,19.4a1.65,1.65,0,0,0-1.82.33l-.06.06a2,2,0,0,1-2.83,0,2,2,0,0,1,0-2.83l.06-.06a1.65,1.65,0,0,0,.33-1.82,1.65,1.65,0,0,0-1.51-1H3a2,2,0,0,1-2-2,2,2,0,0,1,2-2h.09A1.65,1.65,0,0,0,4.6,9a1.65,1.65,0,0,0-.33-1.82l-.06-.06a2,2,0,0,1,0-2.83,2,2,0,0,1,2.83,0l.06.06a1.65,1.65,0,0,0,1.82.33H9a1.65,1.65,0,0,0,1-1.51V3a2,2,0,0,1,2-2,2,2,0,0,1,2,2v.09a1.65,1.65,0,0,0,1,1.51,1.65,1.65,0,0,0,1.82-.33l.06-.06a2,2,0,0,1,2.83,0,2,2,0,0,1,0,2.83l-.06.06a1.65,1.65,0,0,0-.33,1.82V9a1.65,1.65,0,0,0,1.51,1H21a2,2,0,0,1,2,2,2,2,0,0,1-2,2h-.09a1.65,1.65,0,0,0-1.51,1Z"></path>
+        </svg>
+      </div>
+      <div>
+        <h1 class="header__title" id="facilityTitle">Pool Layout Builder</h1>
+        <p class="header__subtitle">Admin Dashboard</p>
+      </div>
+    </div>
+    
+    <nav class="admin-nav">
+      <a href="admin.html" class="admin-nav__item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        Schedule
+      </a>
+      <a href="pool-settings.html" class="admin-nav__item admin-nav__item--active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <path d="M3 9h18"></path>
+          <path d="M9 21V9"></path>
+        </svg>
+        Pool Settings
+      </a>
+      <a href="index.html" class="admin-nav__item" target="_blank">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+          <polyline points="15 3 21 3 21 9"></polyline>
+          <line x1="10" y1="14" x2="21" y2="3"></line>
+        </svg>
+        View Site
+      </a>
+    </nav>
+  </header>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <nav class="toolbar__center">
+      <!-- Pools Dropdown -->
+      <div class="toolbar-dropdown">
+        <button class="toolbar-dropdown__trigger" id="poolsDropdownBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+            <line x1="9" y1="3" x2="9" y2="21"></line>
+            <line x1="15" y1="3" x2="15" y2="21"></line>
+          </svg>
+          <span>Pools</span>
+          <svg class="toolbar-dropdown__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <div class="toolbar-dropdown__menu" id="poolsDropdown">
+          <button class="toolbar-dropdown__item" data-type="pool" data-shape="rectangle">
+            <svg viewBox="0 0 32 24"><rect x="2" y="4" width="28" height="16" rx="2" fill="#0ea5e9"/></svg>
+            <span>Rectangle Pool</span>
+          </button>
+          <button class="toolbar-dropdown__item" data-type="pool" data-shape="l-shape">
+            <svg viewBox="0 0 32 24"><path d="M2 4h16v10h12v6a2 2 0 01-2 2H4a2 2 0 01-2-2V4z" fill="#0ea5e9"/></svg>
+            <span>L-Shape Pool</span>
+          </button>
+          <button class="toolbar-dropdown__item" data-type="pool" data-shape="kidney">
+            <svg viewBox="0 0 32 24"><ellipse cx="16" cy="12" rx="13" ry="9" fill="#0ea5e9"/></svg>
+            <span>Kidney Pool</span>
+          </button>
+          <button class="toolbar-dropdown__item" data-type="pool" data-shape="round">
+            <svg viewBox="0 0 32 24"><circle cx="16" cy="12" r="10" fill="#0ea5e9"/></svg>
+            <span>Round Pool</span>
+          </button>
+          <button class="toolbar-dropdown__item" data-type="pool" data-shape="lazy-river">
+            <svg viewBox="0 0 32 24"><ellipse cx="16" cy="12" rx="12" ry="8" fill="none" stroke="#0ea5e9" stroke-width="4"/></svg>
+            <span>Lazy River</span>
+          </button>
+          <button class="toolbar-dropdown__item" data-type="pool" data-shape="freeform">
+            <svg viewBox="0 0 32 24"><path d="M6 8c6-6 14-2 18 4s0 12-8 10c-6-2-8-4-12-2s-4-6 2-12z" fill="#0ea5e9"/></svg>
+            <span>Freeform Pool</span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Amenities Dropdown -->
+      <div class="toolbar-dropdown">
+        <button class="toolbar-dropdown__trigger" id="amenitiesDropdownBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M8 9c0-2 2-3 3-2M12 7c0-2 2-3 3-2M16 9c0-2 2-3 3-2"></path>
+          </svg>
+          <span>Amenities</span>
+          <svg class="toolbar-dropdown__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <div class="toolbar-dropdown__menu" id="amenitiesDropdown">
+          <button class="toolbar-dropdown__item" data-type="amenity" data-shape="hot-tub">
+            <svg viewBox="0 0 32 24"><circle cx="16" cy="12" r="9" fill="#14b8a6"/></svg>
+            <span>Hot Tub</span>
+          </button>
+          <button class="toolbar-dropdown__item" data-type="amenity" data-shape="splash-pad">
+            <svg viewBox="0 0 32 24"><circle cx="16" cy="14" r="8" fill="#8b5cf6"/><circle cx="16" cy="14" r="3" fill="#a78bfa"/></svg>
+            <span>Splash Pad</span>
+          </button>
+          <button class="toolbar-dropdown__item" data-type="amenity" data-shape="diving-board">
+            <svg viewBox="0 0 32 24"><rect x="6" y="14" width="20" height="3" rx="1" fill="#64748b"/><rect x="2" y="10" width="6" height="10" rx="1" fill="#475569"/></svg>
+            <span>Diving Board</span>
+          </button>
+          <button class="toolbar-dropdown__item" data-type="amenity" data-shape="slide">
+            <svg viewBox="0 0 32 24"><path d="M6 4c4 0 4 8 12 10s10 2 12 6" stroke="#f97316" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+            <span>Water Slide</span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Facilities Dropdown -->
+      <div class="toolbar-dropdown">
+        <button class="toolbar-dropdown__trigger" id="facilitiesDropdownBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+          <span>Facilities</span>
+          <svg class="toolbar-dropdown__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <div class="toolbar-dropdown__menu" id="facilitiesDropdown">
+          <button class="toolbar-dropdown__item" data-type="facility" data-shape="spectator-seating">
+            <svg viewBox="0 0 32 24"><rect x="4" y="6" width="24" height="3" rx="1" fill="#5a6d84"/><rect x="4" y="11" width="24" height="3" rx="1" fill="#5a6d84"/><rect x="4" y="16" width="24" height="3" rx="1" fill="#5a6d84"/></svg>
+            <span>Bleachers</span>
+          </button>
+          <button class="toolbar-dropdown__item" data-type="facility" data-shape="lifeguard-stand">
+            <svg viewBox="0 0 32 24"><rect x="10" y="4" width="12" height="16" rx="2" fill="#854d0e"/><circle cx="16" cy="9" r="3" fill="#fef3c7"/></svg>
+            <span>Lifeguard Stand</span>
+          </button>
+          <button class="toolbar-dropdown__item" data-type="facility" data-shape="entrance">
+            <svg viewBox="0 0 32 24"><rect x="4" y="4" width="24" height="16" rx="2" fill="#475569"/><rect x="12" y="4" width="8" height="4" fill="#64748b"/></svg>
+            <span>Entrance</span>
+          </button>
+          <button class="toolbar-dropdown__item" data-type="facility" data-shape="locker-room">
+            <svg viewBox="0 0 32 24"><rect x="2" y="4" width="28" height="16" rx="2" fill="#475569"/><rect x="6" y="8" width="5" height="8" rx="1" fill="#64748b"/><rect x="13" y="8" width="5" height="8" rx="1" fill="#64748b"/><rect x="20" y="8" width="5" height="8" rx="1" fill="#64748b"/></svg>
+            <span>Locker Rooms</span>
+          </button>
+          <button class="toolbar-dropdown__item" data-type="facility" data-shape="equipment">
+            <svg viewBox="0 0 32 24"><rect x="4" y="6" width="24" height="12" rx="2" fill="#475569"/></svg>
+            <span>Equipment Storage</span>
+          </button>
+          <button class="toolbar-dropdown__item" data-type="facility" data-shape="office">
+            <svg viewBox="0 0 32 24"><rect x="4" y="6" width="24" height="12" rx="2" fill="#475569"/><rect x="20" y="9" width="5" height="6" rx="1" fill="#64748b"/></svg>
+            <span>Office</span>
+          </button>
+        </div>
+      </div>
+    </nav>
+    
+    <div class="toolbar__right">
+      <button class="toolbar-btn" id="btnUndo" title="Undo" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 7v6h6"></path>
+          <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
+        </svg>
+      </button>
+      <button class="toolbar-btn" id="btnRedo" title="Redo" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 7v6h-6"></path>
+          <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path>
+        </svg>
+      </button>
+      <div class="toolbar-divider"></div>
+      <button class="toolbar-btn toolbar-btn--primary" id="btnSave">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+          <polyline points="17 21 17 13 7 13 7 21"></polyline>
+          <polyline points="7 3 7 8 15 8"></polyline>
+        </svg>
+        <span>Save</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Canvas Area -->
+  <main class="canvas-area">
+    <div class="canvas-wrapper">
+      <div class="canvas" id="canvas">
+        <svg class="canvas__grid" id="canvasGrid">
+          <defs>
+            <pattern id="smallGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(0,0,0,0.06)" stroke-width="0.5"/>
+            </pattern>
+            <pattern id="largeGrid" width="100" height="100" patternUnits="userSpaceOnUse">
+              <rect width="100" height="100" fill="url(#smallGrid)"/>
+              <path d="M 100 0 L 0 0 0 100" fill="none" stroke="rgba(0,0,0,0.12)" stroke-width="1"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#largeGrid)"/>
+        </svg>
+        <div class="canvas__elements" id="canvasElements">
+          <!-- Dynamic elements rendered here -->
+        </div>
+      </div>
+    </div>
+    
+    <!-- Selection Popover (shown near selected element) -->
+    <div class="selection-popover" id="selectionPopover">
+      <div class="selection-popover__header">
+        <input type="text" class="selection-popover__name" id="popoverName" placeholder="Element name">
+        <button class="selection-popover__delete" id="popoverDelete" title="Delete">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="selection-popover__body" id="popoverBody">
+        <!-- Dynamic properties based on element type -->
+      </div>
+    </div>
+  </main>
+
+  <!-- Info Section (Tabbed) -->
+  <section class="info-section">
+    <div class="info-section__tabs">
+      <button class="info-tab info-tab--active" data-tab="facility">Facility Info</button>
+      <button class="info-tab" data-tab="activities">Activities</button>
+      <button class="info-tab" data-tab="pools">Pools List</button>
+    </div>
+    
+    <div class="info-section__content">
+      <!-- Facility Info Tab -->
+      <div class="info-panel info-panel--active" id="panel-facility">
+        <div class="info-grid">
+          <div class="info-field">
+            <label class="info-field__label">Facility Name</label>
+            <input type="text" class="info-field__input" id="inputFacilityName" placeholder="Enter facility name">
+          </div>
+          <div class="info-field">
+            <label class="info-field__label">URL Slug</label>
+            <div class="info-field__prefix-group">
+              <span class="info-field__prefix">/</span>
+              <input type="text" class="info-field__input" id="inputSlug" placeholder="facility-slug">
+            </div>
+          </div>
+          <div class="info-field info-field--hours">
+            <label class="info-field__label">Weekday Hours</label>
+            <div class="info-field__time-range">
+              <input type="time" class="info-field__input info-field__input--time" id="inputWeekdayOpen">
+              <span>to</span>
+              <input type="time" class="info-field__input info-field__input--time" id="inputWeekdayClose">
+            </div>
+          </div>
+          <div class="info-field info-field--hours">
+            <label class="info-field__label">Saturday Hours</label>
+            <div class="info-field__time-range">
+              <input type="time" class="info-field__input info-field__input--time" id="inputSaturdayOpen">
+              <span>to</span>
+              <input type="time" class="info-field__input info-field__input--time" id="inputSaturdayClose">
+            </div>
+          </div>
+          <div class="info-field info-field--hours">
+            <label class="info-field__label">Sunday Hours</label>
+            <div class="info-field__time-range">
+              <input type="time" class="info-field__input info-field__input--time" id="inputSundayOpen">
+              <span>to</span>
+              <input type="time" class="info-field__input info-field__input--time" id="inputSundayClose">
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Activities Tab -->
+      <div class="info-panel" id="panel-activities">
+        <!-- Quick Add Suggestions -->
+        <div class="quick-add" id="quickAddSection">
+          <div class="quick-add__title">Quick Add Common Activities</div>
+          <div class="quick-add__chips">
+            <button class="quick-add__chip" data-name="Open Swim" data-short="Open" data-color="#22c55e" data-category="open">
+              <span class="quick-add__swatch" style="background: #22c55e"></span>
+              Open Swim
+            </button>
+            <button class="quick-add__chip" data-name="Lap Swim" data-short="Laps" data-color="#3b82f6" data-category="open">
+              <span class="quick-add__swatch" style="background: #3b82f6"></span>
+              Lap Swim
+            </button>
+            <button class="quick-add__chip" data-name="Closed" data-short="Closed" data-color="#64748b" data-category="open">
+              <span class="quick-add__swatch" style="background: #64748b"></span>
+              Closed
+            </button>
+            <button class="quick-add__chip" data-name="Swim Lessons" data-short="Lessons" data-color="#a855f7" data-category="classes">
+              <span class="quick-add__swatch" style="background: #a855f7"></span>
+              Swim Lessons
+            </button>
+            <button class="quick-add__chip" data-name="Swim Team Practice" data-short="Team" data-color="#f97316" data-category="clubs">
+              <span class="quick-add__swatch" style="background: #f97316"></span>
+              Swim Team
+            </button>
+            <button class="quick-add__chip" data-name="Water Aerobics" data-short="Aerobics" data-color="#ec4899" data-category="classes">
+              <span class="quick-add__swatch" style="background: #ec4899"></span>
+              Water Aerobics
+            </button>
+            <button class="quick-add__chip" data-name="Private Rental" data-short="Rental" data-color="#eab308" data-category="private">
+              <span class="quick-add__swatch" style="background: #eab308"></span>
+              Private Rental
+            </button>
+            <button class="quick-add__chip" data-name="Maintenance" data-short="Maint" data-color="#475569" data-category="open">
+              <span class="quick-add__swatch" style="background: #475569"></span>
+              Maintenance
+            </button>
+          </div>
+        </div>
+        
+        <div class="activities-header">
+          <span class="activities-header__count" id="activitiesCount">0 activities</span>
+          <button class="btn-add" id="btnAddActivity">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add Activity
+          </button>
+        </div>
+        <div class="activities-grid" id="activitiesGrid">
+          <!-- Activities rendered by JS -->
+        </div>
+      </div>
+      
+      <!-- Pools List Tab -->
+      <div class="info-panel" id="panel-pools">
+        <div class="pools-list" id="poolsList">
+          <p class="pools-list__empty">No pools added yet. Use the toolbar above to add pools and other elements.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Activity Edit Modal -->
+  <div class="modal-overlay" id="activityModal">
+    <div class="modal">
+      <div class="modal__header">
+        <h2 class="modal__title" id="activityModalTitle">Add Activity</h2>
+        <button type="button" class="modal__close" id="closeActivityModal">&times;</button>
+      </div>
+      <form class="modal__body" id="activityForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Activity Name</label>
+            <input type="text" class="form-input" id="activityNameInput" required placeholder="e.g., Lap Swimming">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Short Name</label>
+            <input type="text" class="form-input" id="activityShortName" placeholder="e.g., Laps">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Color</label>
+            <div class="color-picker">
+              <input type="color" class="color-picker__input" id="activityColor" value="#22c55e">
+              <input type="text" class="form-input form-input--color" id="activityColorHex" value="#22c55e">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select class="form-select" id="activityCategory">
+              <option value="open">Open Swim</option>
+              <option value="clubs">Clubs & Teams</option>
+              <option value="classes">Classes & Programs</option>
+              <option value="specialty">Specialty Training</option>
+              <option value="therapy">Therapy & Adaptive</option>
+              <option value="private">Private Groups</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal__actions">
+          <button type="button" class="btn btn--secondary" id="cancelActivityBtn">Cancel</button>
+          <button type="button" class="btn btn--danger" id="deleteActivityBtn">Delete</button>
+          <button type="submit" class="btn btn--primary">Save Activity</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <span id="toastMessage">Saved successfully</span>
+  </div>
+
+  <script src="js/schedule.js"></script>
+  <script src="js/pool-settings.js"></script>
+</body>
+</html>
