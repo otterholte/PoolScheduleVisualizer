@@ -49,6 +49,12 @@
         </button>
       </div>
       
+      <button class="btn btn--ghost btn--icon" id="chatToggle" title="Chat Assistant">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+      </button>
+      
       <a href="#" id="adminLink" class="btn btn--ghost btn--icon" title="Admin Panel">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="3"></circle>
@@ -521,6 +527,65 @@
     </div>
   </div>
 
+  <!-- Chat Panel -->
+  <div class="chat-panel" id="chatPanel">
+    <div class="chat-panel__header">
+      <div class="chat-panel__title">
+        <div class="chat-panel__avatar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+        </div>
+        <div>
+          <h3>Pool Assistant</h3>
+          <span class="chat-panel__status">Online</span>
+        </div>
+      </div>
+      <button class="chat-panel__close" id="chatClose" title="Close chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    
+    <div class="chat-panel__messages" id="chatMessages">
+      <div class="chat-message chat-message--bot">
+        <div class="chat-message__avatar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+          </svg>
+        </div>
+        <div class="chat-message__content">
+          <p>Hi! 👋 I'm your pool assistant. I can help you find:</p>
+          <ul>
+            <li>Available lanes right now</li>
+            <li>Upcoming open swim times</li>
+            <li>Class schedules</li>
+            <li>Facility information</li>
+          </ul>
+          <p>What would you like to know?</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="chat-panel__input">
+      <form id="chatForm" class="chat-input-form">
+        <input type="text" id="chatInput" placeholder="Ask about pool schedules..." autocomplete="off">
+        <button type="submit" id="chatSend" title="Send message">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Chat Overlay (for mobile) -->
+  <div class="chat-overlay" id="chatOverlay"></div>
+
   <script src="js/schedule.js"></script>
   <script src="js/app.js"></script>
   <script>
@@ -543,6 +608,153 @@
       
       // Clear after 5 seconds to avoid infinite loop
       setTimeout(() => clearInterval(checkFacilityName), 5000);
+    })();
+    
+    // Chat Panel Functionality
+    (function() {
+      const chatToggle = document.getElementById('chatToggle');
+      const chatPanel = document.getElementById('chatPanel');
+      const chatClose = document.getElementById('chatClose');
+      const chatOverlay = document.getElementById('chatOverlay');
+      const chatForm = document.getElementById('chatForm');
+      const chatInput = document.getElementById('chatInput');
+      const chatMessages = document.getElementById('chatMessages');
+      
+      // Toggle chat panel
+      function toggleChat() {
+        const isOpen = chatPanel.classList.contains('open');
+        chatPanel.classList.toggle('open');
+        chatOverlay.classList.toggle('open');
+        
+        if (!isOpen) {
+          setTimeout(() => chatInput.focus(), 300);
+        }
+      }
+      
+      chatToggle.addEventListener('click', toggleChat);
+      chatClose.addEventListener('click', toggleChat);
+      chatOverlay.addEventListener('click', toggleChat);
+      
+      // Close on Escape key
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && chatPanel.classList.contains('open')) {
+          toggleChat();
+        }
+      });
+      
+      // Send message
+      chatForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const message = chatInput.value.trim();
+        if (!message) return;
+        
+        // Add user message
+        addMessage(message, 'user');
+        chatInput.value = '';
+        
+        // Show typing indicator
+        showTyping();
+        
+        // Simulate bot response (replace with actual AI later)
+        setTimeout(() => {
+          hideTyping();
+          const response = generateResponse(message);
+          addMessage(response, 'bot');
+        }, 1000 + Math.random() * 1000);
+      });
+      
+      function addMessage(text, type) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-message chat-message--${type}`;
+        
+        const avatar = type === 'user' 
+          ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>`
+          : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+            </svg>`;
+        
+        messageDiv.innerHTML = `
+          <div class="chat-message__avatar">${avatar}</div>
+          <div class="chat-message__content"><p>${escapeHtml(text)}</p></div>
+        `;
+        
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+      
+      function showTyping() {
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'chat-message chat-message--bot chat-typing-indicator';
+        typingDiv.innerHTML = `
+          <div class="chat-message__avatar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+            </svg>
+          </div>
+          <div class="chat-typing__dots">
+            <span class="chat-typing__dot"></span>
+            <span class="chat-typing__dot"></span>
+            <span class="chat-typing__dot"></span>
+          </div>
+        `;
+        chatMessages.appendChild(typingDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+      
+      function hideTyping() {
+        const typing = chatMessages.querySelector('.chat-typing-indicator');
+        if (typing) typing.remove();
+      }
+      
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+      
+      // Simple response generator (placeholder for AI)
+      function generateResponse(message) {
+        const lower = message.toLowerCase();
+        
+        if (lower.includes('open swim') || lower.includes('lap swim')) {
+          return "Open lap swimming is available throughout the day! Check the main pool (lanes 7-10) and shallow end for the most availability. The schedule updates in real-time on the map view.";
+        }
+        
+        if (lower.includes('hours') || lower.includes('open') || lower.includes('close')) {
+          return "We're open weekdays 5:30 AM - 8:00 PM, Saturdays 6:00 AM - 6:00 PM, and Sundays 8:00 AM - 5:00 PM. Holiday hours may vary!";
+        }
+        
+        if (lower.includes('class') || lower.includes('lesson')) {
+          return "We offer a variety of classes including Learn-to-Swim, Aqua Fitness, and Youth Swimming. Check the Activities tab in the List view to see upcoming class times!";
+        }
+        
+        if (lower.includes('lane') || lower.includes('available')) {
+          return "You can see real-time lane availability on the Map view! Green lanes are open for lap swimming, while colored lanes show reserved activities. Click any lane for details.";
+        }
+        
+        if (lower.includes('hot tub') || lower.includes('spa')) {
+          return "We have two hot tubs located near the therapy pool area. They're open during regular facility hours and don't require reservations!";
+        }
+        
+        if (lower.includes('deep') || lower.includes('diving')) {
+          return "The deep pool and diving wells are available for diving practice, SCUBA training, and water polo. Check the schedule for specific activity times.";
+        }
+        
+        if (lower.includes('hi') || lower.includes('hello') || lower.includes('hey')) {
+          return "Hello! 👋 How can I help you today? I can answer questions about pool schedules, hours, classes, and lane availability.";
+        }
+        
+        if (lower.includes('thank')) {
+          return "You're welcome! Let me know if you have any other questions. Enjoy your swim! 🏊";
+        }
+        
+        return "I'd be happy to help with that! Currently I can answer questions about pool hours, lane availability, classes, and facilities. For more specific questions, the full AI assistant will be available soon!";
+      }
     })();
   </script>
 </body>
