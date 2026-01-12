@@ -1,7 +1,6 @@
 {
   "facilityInfo": {
     "name": "EPIC Aquatic Center",
-    "slug": "demo",
     "hours": {
       "weekday": {
         "open": "05:30",
@@ -23,21 +22,21 @@
         "id": "therapy",
         "name": "Therapy Pool",
         "lanes": [
-          1,
-          2
+          "E",
+          "W"
         ]
       },
       {
         "id": "instructional",
         "name": "Instructional Pool",
         "lanes": [
-          1,
-          2
+          "N",
+          "S"
         ]
       },
       {
         "id": "shallow",
-        "name": "Shallow End",
+        "name": "Shallow End (25 Yards)",
         "lanes": [
           1,
           2,
@@ -49,7 +48,7 @@
       },
       {
         "id": "main",
-        "name": "Main Pool",
+        "name": "Main Pool (25 Yards)",
         "lanes": [
           1,
           2,
@@ -76,181 +75,15 @@
         "id": "deep_south",
         "name": "Deep Well South",
         "lanes": [
-          1
+          "South"
         ]
       },
       {
         "id": "deep_north",
         "name": "Deep Well North",
         "lanes": [
-          1
-        ]
-      }
-    ],
-    "elements": [
-      {
-        "id": "entrance",
-        "type": "facility",
-        "shape": "entrance",
-        "name": "Entrance & Locker Rooms",
-        "x": 20,
-        "y": 20,
-        "width": 80,
-        "height": 95
-      },
-      {
-        "id": "lifeguard",
-        "type": "facility",
-        "shape": "lifeguard-stand",
-        "name": "Lifeguard",
-        "x": 20,
-        "y": 130,
-        "width": 55,
-        "height": 40
-      },
-      {
-        "id": "hot_tub_1",
-        "type": "amenity",
-        "shape": "hot-tub",
-        "name": "Hot Tub",
-        "x": 25,
-        "y": 185,
-        "width": 60,
-        "height": 60
-      },
-      {
-        "id": "hot_tub_2",
-        "type": "amenity",
-        "shape": "hot-tub",
-        "name": "Hot Tub",
-        "x": 25,
-        "y": 260,
-        "width": 60,
-        "height": 60
-      },
-      {
-        "id": "therapy",
-        "type": "pool",
-        "shape": "rectangle",
-        "name": "Therapy Pool",
-        "x": 20,
-        "y": 340,
-        "width": 80,
-        "height": 90,
-        "lanes": 2,
-        "laneLabels": [
-          "E",
-          "W"
-        ]
-      },
-      {
-        "id": "instructional",
-        "type": "pool",
-        "shape": "rectangle",
-        "name": "Instructional Pool",
-        "x": 115,
-        "y": 340,
-        "width": 95,
-        "height": 90,
-        "lanes": 2,
-        "laneLabels": [
-          "N",
-          "S"
-        ]
-      },
-      {
-        "id": "shallow",
-        "type": "pool",
-        "shape": "rectangle",
-        "name": "Shallow End",
-        "subtitle": "25 YARDS • 6 LANES",
-        "x": 115,
-        "y": 20,
-        "width": 135,
-        "height": 305,
-        "lanes": 6
-      },
-      {
-        "id": "main",
-        "type": "pool",
-        "shape": "rectangle",
-        "name": "Main Pool",
-        "subtitle": "25 YARDS • 10 LANES",
-        "x": 265,
-        "y": 20,
-        "width": 225,
-        "height": 300,
-        "lanes": 10
-      },
-      {
-        "id": "deep",
-        "type": "pool",
-        "shape": "rectangle",
-        "name": "Deep Pool",
-        "subtitle": "3 LANES",
-        "x": 505,
-        "y": 20,
-        "width": 120,
-        "height": 200,
-        "lanes": 3
-      },
-      {
-        "id": "deep_south",
-        "type": "pool",
-        "shape": "rectangle",
-        "name": "Deep Well South",
-        "x": 505,
-        "y": 235,
-        "width": 120,
-        "height": 95,
-        "lanes": 1,
-        "laneLabels": [
-          "South"
-        ]
-      },
-      {
-        "id": "deep_north",
-        "type": "pool",
-        "shape": "rectangle",
-        "name": "Deep Well North",
-        "x": 505,
-        "y": 340,
-        "width": 120,
-        "height": 90,
-        "lanes": 1,
-        "laneLabels": [
           "North"
         ]
-      },
-      {
-        "id": "spectator",
-        "type": "facility",
-        "shape": "bleachers",
-        "name": "Spectator Seating",
-        "x": 640,
-        "y": 20,
-        "width": 135,
-        "height": 200
-      },
-      {
-        "id": "equipment",
-        "type": "facility",
-        "shape": "equipment-storage",
-        "name": "Equipment Storage",
-        "x": 640,
-        "y": 235,
-        "width": 135,
-        "height": 70
-      },
-      {
-        "id": "offices",
-        "type": "facility",
-        "shape": "office",
-        "name": "Staff Offices",
-        "x": 640,
-        "y": 320,
-        "width": 135,
-        "height": 110
       }
     ]
   },
@@ -408,5 +241,40 @@
       "category": "private"
     }
   ],
-  "schedules": {}
+  "schedules": {
+    "2026-01-11": [
+      {
+        "section": "shallow",
+        "lanes": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "start": "08:00",
+        "end": "12:00",
+        "activity": "youth_swim"
+      },
+      {
+        "section": "main",
+        "lanes": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "start": "08:00",
+        "end": "11:00",
+        "activity": "open_lap"
+      }
+    ]
+  }
 }
